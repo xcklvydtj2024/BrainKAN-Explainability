@@ -1,14 +1,29 @@
-# BrainKAN Explainability: Unmasking the Identifiability Boundary of Edge-Level Nonlinear Functions in task-fMRI
+# BrainKAN Explainability: An Identifiability-Aware Framework for Evaluating Edge-Level Nonlinear Functions in Task-fMRI Graph Models
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
 **Status:** Independent research project / methodological study  
-**Key finding:** Under the tested common-reference estimand, no edge survived FDR correction, indicating that the apparent task-related nonlinear remodeling observed under naive evaluation was not identifiable under the calibrated analysis.
+**Key finding:** Under the tested common-reference estimand, no edge survived FDR correction, indicating that the apparent task-related nonlinear remodeling observed under naive evaluation was not identifiable under the calibrated analysis. **Failure to detect significant edges should not be interpreted as absence of neural changes, but as a limitation of identifying edge-level nonlinear remodeling under the tested estimator.**
 
 This repository presents an identifiability-aware framework for probing edge-level nonlinear functions in task-fMRI graph models. Rather than treating learned nonlinearities as direct evidence of biological computation, we explicitly test when such interpretations are supported—and when they are confounded by condition-dependent input regimes.
 
 By developing a common-reference and null-calibrated framework, this research codebase characterizes what aspects of edge-level computation can—and cannot—be identified under the tested task-fMRI setting.
+
+## 🚀 Quick Start
+
+### Environment
+- Python 3.10+
+- PyTorch (compatible with your CUDA version)
+- See `requirements.txt` for full dependencies
+
+### Dataset
+Experiments were conducted using **HCP-YA working memory task fMRI data**. The analysis focused on 0-back vs 2-back conditions across a subset of 100 subjects. See `data/README.md` for required tensor formatting.
+
+### Run
+```bash
+python 01_q1_q2_q3a_naive_analysis.py
+```
 
 ---
 
@@ -72,13 +87,17 @@ Does a task-related change in regional activation imply a change in edge-level c
 The code strictly implements our **progressive falsification pipeline**. We strictly differentiate exploratory calibration (Q3B) from held-out confirmatory analysis (Q3C).
 
 - **`01_q1_q2_q3a_naive_analysis.py`** 
-  Establishes function existence (Q1) and tests for clustering/taxonomy (Q2, which prevents biological over-interpretation). Crucially, it demonstrates the initial discovery of "remodeling" via naive $\Delta C$ (Q3A) and implements the **Shuffled-Label Null** that exposes the identifiability limitation. *(See `assets/figure2_naive_effect.png` for reference)*
+  Establishes function existence (Q1) and tests for clustering/taxonomy (Q2, which prevents biological over-interpretation). Crucially, it demonstrates the initial discovery of "remodeling" via naive $\Delta C$ (Q3A) and implements the **Shuffled-Label Null** that exposes the identifiability limitation. 
+  
+  ![Naive Effect vs Null](assets/figure2_naive_effect.png)
   
 - **`02_q3b_common_reference_geometry.py`** (Exploratory Calibration Evidence)
   Implements the Common-Reference geometry to remove input-shift bias, training 100 independent Null Models with Subject-Level label swaps on the full dataset pair configuration. Result: **0/240 edges survived FDR correction under the tested common-reference estimand.** No detectable task-associated excess geometry was found under this analysis.
 
 - **`03_synthetic_identifiability_benchmark.py`** 
-  A synthetic encoding environment (S0-S5) across varying SNRs. It provides the **empirical Confusability Matrix** used to characterize the tested estimator's identifiability limits. *(See `assets/figure3_confusability.png` for reference)*
+  A synthetic encoding environment (S0-S5) across varying SNRs. It provides the **empirical Confusability Matrix** used to characterize the tested estimator's identifiability limits. 
+  
+  ![Confusability Matrix](assets/figure3_confusability.png)
   
 - **`04_q3c_effective_gain.py`** (Held-Out Confirmatory Evidence)
   Implements the Effective Gain estimator using a stringent **Subject-level 5-fold cross-validation** and a **Subject-level Paired Permutation Test** to formally evaluate condition differences.
