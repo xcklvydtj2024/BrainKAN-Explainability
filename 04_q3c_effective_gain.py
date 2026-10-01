@@ -6,11 +6,11 @@ import matplotlib.pyplot as plt
 from scipy.stats import wilcoxon
 
 import sys
-sys.path.append(r"C:\Users\dotheworst\.gemini\antigravity-ide\scratch\brain-gnn-explainability")
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from models.kan import BrainKAN, _b_spline_basis
 
 # Setup paths
-WORKDIR = r"C:\Users\dotheworst\.gemini\antigravity-ide\scratch\brain-gnn-explainability"
+WORKDIR = r"D:\BrainKNN"
 ARTIFACTS = os.path.join(WORKDIR, "artifacts")
 os.makedirs(ARTIFACTS, exist_ok=True)
 
@@ -118,7 +118,7 @@ def compute_reference_grids(dataset_pairs, base_edge_index):
 def main():
     import sys
     sys.path.append(WORKDIR)
-    from formal_experiment import load_real_hcp_data
+    from utils_data_loading import load_real_hcp_data
     from models.kan import BrainKAN
     
     print("Loading Data...")

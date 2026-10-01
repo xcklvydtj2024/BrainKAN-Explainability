@@ -1,0 +1,2 @@
+data_dir: "./data"
+hcp_data_file: "./data/HCP_GNN_features.npz"

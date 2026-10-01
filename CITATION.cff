@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "BrainKAN Explainability: Identifiability Boundary of Edge-Level Nonlinear Functions in task-fMRI"
+type: software
+authors:
+  - family-names: "Researcher"
+    given-names: "Independent"
+repository-code: "https://github.com/YourUsername/BrainKNN-Explainability"
+date-released: "2026-10-01"
+license: MIT

@@ -6,11 +6,11 @@ from torch_geometric.loader import DataLoader
 from sklearn.linear_model import LinearRegression
 
 import sys
-sys.path.append(r"C:\Users\dotheworst\.gemini\antigravity-ide\scratch\brain-gnn-explainability")
-from formal_experiment import load_real_hcp_data
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from utils_data_loading import load_real_hcp_data
 from models.kan import BrainKAN
 
-DATA_DIR = r"F:\hcp_processed"
+DATA_DIR = r"D:\BrainKNN\data"
 SEED = 42
 T_RANGE = (-8.0, 12.0)
 R_NULLS = 100 # We can do 100 because we train 1 model per null!

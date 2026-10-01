@@ -26,10 +26,10 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 import os
 
-from formal_experiment import load_real_hcp_data
+from utils_data_loading import load_real_hcp_data
 from models.kan import BrainKAN, _b_spline_basis
 
-ARTIFACTS = r"C:\Users\dotheworst\.gemini\antigravity-ide\brain\c0f91029-bfda-4776-8794-18b236e47d07"
+ARTIFACTS = r"D:\BrainKNN\results"
 SEED = 42
 N_SPLITS = 5
 N_PROBE = 500
