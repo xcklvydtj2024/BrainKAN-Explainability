@@ -44,6 +44,10 @@ def fit_spline(X, Y):
 
 def evaluate_sim(args):
     n, snr, mech, strength, rep = args
+    import hashlib
+    seed_str = f"{mech}_{n}_{snr}_{strength}_{rep}"
+    np.random.seed(int(hashlib.md5(seed_str.encode()).hexdigest(), 16) % (2**32))
+    
     X_0, Y_0, X_2, Y_2 = generate_data(n, snr, mech, strength, input_shift=(mech != 'S0'))
     
     # Common support (M1 vs M5)

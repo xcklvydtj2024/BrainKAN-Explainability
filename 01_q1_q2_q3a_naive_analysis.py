@@ -428,6 +428,12 @@ def run_q2(all_curves, all_sigs, avg_sigs, base_edge_index, t_values):
               f"curv={profile['curvature']:.3f}  mono={profile['monotonicity']:.2f}  "
               f"TP={profile['turning_points']:.1f}")
     
+    # Save ARI results
+    import pandas as pd
+    df_ari = pd.DataFrame({'Pairwise_Fold_ARI': ari_scores})
+    df_ari.to_csv(os.path.join(ARTIFACTS, "q2_cluster_stability.csv"), index=False)
+    print("  [Q2] Cluster stability ARI saved to results/q2_cluster_stability.csv")
+    
     return labels_avg, best_k, sil_scores, ari_scores
 
 

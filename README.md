@@ -83,9 +83,9 @@ Does a task-related change in regional activation imply a change in edge-level c
                 IDENTIFIABILITY BOUNDARY
 ```
 
-## 📊 Model Performance & Baselines
+## 📊 Predictive Adequacy Check
 
-Before interpreting edge functions, we establish that BrainKAN successfully captures task-related information. It demonstrates predictive signal under subject-level cross-validation (N=100 subjects × 2 conditions). We benchmarked BrainKAN against standard graph neural networks:
+Before interpreting edge functions, we must ensure BrainKAN successfully captures task-related information. It demonstrates stable predictive signal under subject-level cross-validation (N=100 subjects × 2 conditions). We benchmarked BrainKAN against standard graph neural networks simply to ensure it is learning effectively:
 
 | Model | Mean 5-Fold Accuracy | Parameters | Edge-level Interpretability |
 |-------|---------------------|------------|-----------------------------|
@@ -93,7 +93,7 @@ Before interpreting edge functions, we establish that BrainKAN successfully capt
 | **GAT** | ~90.0% | ~3.1k | Attention weights only |
 | **BrainKAN** | **~93.0%** | **~590k** | **Explicit edge-level function** $\Phi_{ij}(x)$ |
 
-*Note: The primary goal of BrainKAN is not predictive supremacy, but establishing that it is sufficiently predictive to justify extracting its internal edge functions. Detailed cross-validation fold accuracies are exported to `results/fold_accuracies.csv`.*
+*Note: The primary goal here is **not predictive supremacy**, but establishing predictive adequacy. The capacity gap (590k vs ~3k parameters) makes direct superiority claims unfair. BrainKAN achieves stable subject-level predictive performance sufficient to support downstream function probing.*
 
 ## 📂 Repository Code Structure
 

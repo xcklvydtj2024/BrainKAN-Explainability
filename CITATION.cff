@@ -3,8 +3,8 @@ message: "If you use this software, please cite it as below."
 title: "BrainKAN Explainability: An Identifiability-Aware Framework for Evaluating Edge-Level Nonlinear Functions in Task-fMRI Graph Models"
 type: software
 authors:
-  - family-names: "<Your Last Name>"
-    given-names: "<Your First Name>"
+  - family-names: "Researcher"
+    given-names: "Xcklvydtj"
 repository-code: "https://github.com/xcklvydtj2024/BrainKAN-Explainability"
 date-released: "2026-10-01"
 license: MIT

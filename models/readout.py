@@ -13,7 +13,7 @@ Reference:
 
 import torch
 import torch.nn as nn
-from torch_geometric.nn import global_mean_pool, global_max_pool
+from torch_geometric.nn import global_mean_pool, global_max_pool, global_add_pool
 
 
 class AttentionPooling(nn.Module):
@@ -52,7 +52,7 @@ class AttentionPooling(nn.Module):
         gate_scores = softmax(gate_scores, batch)
 
         weighted = x * gate_scores  # [N, D]
-        return global_mean_pool(weighted, batch) * x.size(0) / (batch.max() + 1)
+        return global_add_pool(weighted, batch)
 
 
 class MultiScaleReadout(nn.Module):
