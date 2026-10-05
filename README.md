@@ -84,7 +84,7 @@ Does a task-related change in regional activation imply a change in edge-level c
 
 ## 📊 Model Performance & Baselines
 
-Before interpreting edge functions, we establish that BrainKAN successfully captures task-related information without merely memorizing the dataset (N=100 subjects × 2 conditions). We benchmarked BrainKAN against standard graph neural networks:
+Before interpreting edge functions, we establish that BrainKAN successfully captures task-related information. It demonstrates predictive signal under subject-level cross-validation (N=100 subjects × 2 conditions). We benchmarked BrainKAN against standard graph neural networks:
 
 | Model | Mean 5-Fold Accuracy | Parameters | Edge-level Interpretability |
 |-------|---------------------|------------|-----------------------------|
@@ -96,14 +96,14 @@ Before interpreting edge functions, we establish that BrainKAN successfully capt
 
 ## 📂 Repository Code Structure
 
-The code strictly implements our **progressive falsification pipeline**. We strictly differentiate exploratory calibration (Q3B) from held-out confirmatory analysis (Q3C).
+The code implements the current analysis protocol. We differentiate full-data exploratory calibration (Q3B) from held-out calibrated analysis (Q3C).
 
 - **`01_q1_q2_q3a_naive_analysis.py`** 
   Establishes function existence (Q1) and tests for clustering/taxonomy (Q2, which prevents biological over-interpretation). Crucially, it demonstrates the initial discovery of "remodeling" via naive $\Delta C$ (Q3A) and implements the **Shuffled-Label Null** that exposes the identifiability limitation. 
   
   ![Naive Effect vs Null](assets/figure2_naive_effect.png)
   
-- **`02_q3b_common_reference_geometry.py`** (Exploratory Calibration Evidence)
+- **`02_q3b_common_reference_geometry.py`** (Full-data Exploratory Null Calibration)
   Implements the Common-Reference geometry to remove input-shift bias, training 100 independent Null Models with Subject-Level label swaps on the full dataset pair configuration. Result: **0/240 edges survived FDR correction under the tested common-reference estimand.** No detectable task-associated excess geometry was found under this analysis.
 
 - **`03_synthetic_identifiability_benchmark.py`** 
@@ -111,7 +111,7 @@ The code strictly implements our **progressive falsification pipeline**. We stri
   
   ![Confusability Matrix](assets/figure3_confusability.png)
   
-- **`04_q3c_effective_gain.py`** (Held-Out Confirmatory Evidence)
+- **`04_q3c_effective_gain.py`** (Held-Out Calibrated Comparison)
   Implements the Effective Gain estimator using a stringent **Subject-level 5-fold cross-validation** and a **Subject-level Paired Permutation Test** to formally evaluate condition differences.
 
 - **`models/`**
@@ -125,7 +125,7 @@ The code strictly implements our **progressive falsification pipeline**. We stri
 We applied absolute methodological constraints to prevent false positives:
 1. **Statistical Unit**: The atomic unit of inference is the **Subject**, protecting paired nested structures.
 2. **Q3A Null Unification (Authoritative Null)**: We use **Within-Subject Label Swapping** (randomly swapping 0BK $\leftrightarrow$ 2BK per subject) to break task association while preserving topological covariance.
-3. **Q3B Calibration Alignment**: Identical statistic $T = 1-R^2$ computed strictly using identically built cross-fitted pipelines for $G^{real}$ and $G^{null}$.
+3. **Q3B Calibration Alignment**: Identical statistic $T = 1-R^2$ computed using identically structured full-data exploratory pipelines for $G^{real}$ and $G^{null}$.
 4. **Q3C Exchangeability**: Evaluated using a Paired Permutation test that flips the sign of $dG_i^{real} - dG_i^{null}$, which uses subject-level paired sign-flipping under the specified strong-null exchangeability assumption.
 5. **Handling Out-of-Range Domains**: `np.interp` silent clamping is strictly blocked; out-of-range evaluations map directly to `NaN` and are transparently excluded, preventing artificial flattenings of curvature.
 
@@ -133,7 +133,9 @@ We applied absolute methodological constraints to prevent false positives:
 
 To ensure absolute clarity regarding the scope of this project:
 - **Null Sample Size**: Q3B currently operates on $R_{null}=100$, yielding an empirical resolution of $\sim0.0099$. This is sufficient for our exploratory falsification phase, whereas Q3C correctly shifts to 5,000 permutations for confirmatory inference. Future highly-powered confirmatory studies should extend Q3B empirical nulls beyond 1,000.
-- **Synthetic Paradigm Generality**: The S0-S5 synthetic framework currently probes baseline scales, shifts, and nonlinear `tanh` perturbations. Further expansion into complex asymmetrical nonlinearities, localized curvature shifts, and highly correlated interaction effects is required to construct a universally applicable Confusability Matrix for arbitrary BrainKAN deployments.
+- **Synthetic Paradigm & Empiric Thresholds**: The S0-S5 synthetic framework currently probes baseline scales, shifts, and nonlinear `tanh` perturbations. Our Confusability Probability Matrix relies on a specific absolute difference threshold ($\tau=0.2$). This maps the empirical confusability under a specific spline estimator and scale, rather than asserting a universal boundary. Further expansion into complex asymmetrical nonlinearities is required.
+- **Hidden Channel Permutation Symmetry**: Layer 1 expands single features to 16 hidden channels. While we average across channels to compute mean curvature or slope, the hidden channels themselves possess permutation symmetry. Demonstrating true channel-level function reproducibility across folds remains a critical neural network identifiability issue for future exploration.
+- **Deviation-from-Linearity**: Our defined Nonlinearity (NL) metric ($1 - R^2$) acts as a *deviation-from-linearity* index. Since the baseline function includes a `SiLU` activation, an edge with a zero spline component is still technically nonlinear.
 - **Architectural Novelty**: The focus of this codebase is entirely on **scientific identifiability**, not pushing state-of-the-art predictive accuracy. It relies on standard KAN structures to demonstrate fundamental mathematical constraints of edge-level explainability in task-fMRI.
 
 ## ⚠️ Final Interpretational Constraints
@@ -141,4 +143,4 @@ To ensure absolute clarity regarding the scope of this project:
 Through the lens of this repository, we explicitly restrict the scientific conclusions:
 - **We DO NOT claim** BrainKAN discovers new, true biological "working memory mechanistic motifs."
 - **We DO NOT claim** effective gain differences ($\Delta G$) necessarily represent synaptic gain modulation, since our Synthetic Benchmark proved it is inherently confusable with input-regime kinematic shifts.
-- **We DO claim** that this codebase establishes a critical **Identifiability Boundary**: demonstrating that, under the tested edge-level estimator and task-fMRI observation regime, apparent task-related nonlinear remodeling can be confounded by condition-dependent input operating regimes.
+- **We DO claim** that this codebase provides evidence for an **Identifiability Boundary**: demonstrating that, under the tested edge-level estimator and task-fMRI observation regime, apparent task-related nonlinear remodeling can be confounded by condition-dependent input operating regimes.
