@@ -1,8 +1,12 @@
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
+import os
 import multiprocessing as mp
 import time
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ARTIFACTS_DIR = os.path.join(BASE_DIR, "results")
 
 # Helper function to generate data
 def generate_data(n, snr, mechanism, strength, input_shift=False):
@@ -18,7 +22,7 @@ def generate_data(n, snr, mechanism, strength, input_shift=False):
     elif mechanism == 'S1': Y_2_clean = f_base(X_2)
     elif mechanism == 'S2': Y_2_clean = (1.0 + strength) * f_base(X_2)
     elif mechanism == 'S3': Y_2_clean = f_base(X_2) / (1.0 + strength)
-    elif mechanism == 'S4': Y_2_clean = f_base(X_2) * (1.0 if strength > 0 else 0.0)
+    elif mechanism == 'S4': Y_2_clean = f_base(X_2) * (1.0 - strength)
     elif mechanism == 'S5': Y_2_clean = f_base(X_2) + strength * (X_2**2)
     
     Y_0 = Y_0_clean + np.random.randn(n) / snr
@@ -81,7 +85,15 @@ def main():
         results = pool.map(evaluate_sim, tasks)
         
     df = pd.DataFrame(results)
-    df.to_csv("synthetic_confusability_results.csv", index=False)
+    df.to_csv(os.path.join(ARTIFACTS_DIR, "synthetic_confusability_results.csv"), index=False)
+    
+    # Compute Confusability Probability Matrix P(D_e < tau)
+    tau = 0.2
+    df['Confused_as_Null'] = df['D_e'] < tau
+    prob_df = df.groupby(['n', 'snr', 'mech', 'strength'])['Confused_as_Null'].mean().reset_index()
+    prob_df.rename(columns={'Confused_as_Null': 'Prob_Indistinguishable'}, inplace=True)
+    prob_df.to_csv(os.path.join(ARTIFACTS_DIR, "confusability_probability_matrix.csv"), index=False)
+    
     print(f"Finished in {time.time()-t0:.1f} seconds. Saved to CSV.")
 
 if __name__ == "__main__":

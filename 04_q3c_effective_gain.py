@@ -10,12 +10,12 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from models.kan import BrainKAN, _b_spline_basis
 
 # Setup paths
-WORKDIR = r"D:\BrainKNN"
+WORKDIR = os.path.dirname(os.path.abspath(__file__))
 ARTIFACTS = os.path.join(WORKDIR, "artifacts")
 os.makedirs(ARTIFACTS, exist_ok=True)
 
 # Load data and models
-def get_analytic_deriv(conv, probe, e):
+def get_finite_difference_deriv(conv, probe, e):
     eps = 1e-4
     n = len(probe)
     grid_e = conv.grid[e].unsqueeze(0).expand(n, -1, -1)
@@ -46,7 +46,7 @@ def evaluate_Q3C(model, test_pairs, ref_grids, base_edge_index):
         src = base_edge_index[0, e].item()
         x_ref = torch.tensor(ref_grids[src], dtype=torch.float32)
         with torch.no_grad():
-            deriv = get_analytic_deriv(conv, x_ref, e)
+            deriv = get_finite_difference_deriv(conv, x_ref, e)
         G_ref[e] = deriv.abs().mean().item()
         
     for i, (g0, g2) in enumerate(test_pairs):
@@ -59,8 +59,8 @@ def evaluate_Q3C(model, test_pairs, ref_grids, base_edge_index):
             val_2 = torch.tensor([x2[src]], dtype=torch.float32)
             
             with torch.no_grad():
-                d0 = get_analytic_deriv(conv, val_0, e).abs().mean().item()
-                d2 = get_analytic_deriv(conv, val_2, e).abs().mean().item()
+                d0 = get_finite_difference_deriv(conv, val_0, e).abs().mean().item()
+                d2 = get_finite_difference_deriv(conv, val_2, e).abs().mean().item()
                 
             G_actual_0bk[i, e] = d0
             G_actual_2bk[i, e] = d2
@@ -199,6 +199,18 @@ def main():
     
     print(f"\n=== Q3C Effective Gain Results ===")
     print(f"Number of edges with significant Delta G (Real > Null, FDR < 0.05): {sig_edges} / {num_edges}")
+    
+    import pandas as pd
+    df_q3c = pd.DataFrame({
+        'EdgeID': np.arange(num_edges),
+        'Real_Gref': real_Gref,
+        'Null_Gref': null_Gref,
+        'p_perm': p_values,
+        'p_fdr': p_fdr,
+        'Significant': p_fdr < 0.05
+    })
+    df_q3c.to_csv(os.path.join(ARTIFACTS, "q3c_final_table.csv"), index=False)
+    print("Saved Q3C final table to results/q3c_final_table.csv")
     
     # Plotting
     plt.figure(figsize=(10, 6))

@@ -25,11 +25,13 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 import os
+import pandas as pd
 
 from utils_data_loading import load_real_hcp_data
 from models.kan import BrainKAN, _b_spline_basis
 
-ARTIFACTS = r"D:\BrainKNN\results"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ARTIFACTS = os.path.join(BASE_DIR, "results")
 SEED = 42
 N_SPLITS = 5
 N_PROBE = 500
@@ -735,6 +737,7 @@ def main():
     # Train 5-fold models (reusing the same protocol as all previous experiments)
     print("\n--- Training 5-fold BrainKAN models (seed=42) ---")
     models = []
+    all_accs = []
     kf = KFold(n_splits=N_SPLITS, shuffle=True, random_state=SEED)
     
     for fold_i, (train_idx, test_idx) in enumerate(kf.split(dataset_pairs)):
@@ -764,6 +767,7 @@ def main():
                 out = model(batch.x, batch.edge_index, batch=batch.batch)
                 correct += (out.argmax(1) == batch.y).sum().item()
         acc = correct / len(test_data)
+        all_accs.append(acc)
         
         # Verify grid support
         grid_min = model.conv1.grid.min().item()
@@ -771,6 +775,11 @@ def main():
         
         print(f"  Fold {fold_i+1}: Acc={acc*100:.1f}%, Spline Grid=[{grid_min:.2f}, {grid_max:.2f}]")
         models.append(model)
+        
+    df_accs = pd.DataFrame({'Fold': range(1, N_SPLITS+1), 'Accuracy': all_accs})
+    df_accs.to_csv(os.path.join(ARTIFACTS, "fold_accuracies.csv"), index=False)
+    print(f"  Mean Accuracy: {np.mean(all_accs)*100:.1f}% +/- {np.std(all_accs)*100:.1f}%")
+
     
     # ---- Q1 ----
     all_curves, all_sigs, avg_sigs = run_q1(models, base_edge_index, t_values)
@@ -800,6 +809,15 @@ def main():
     print(f"\nQ3A: {n_sig}/{240} edges with significant operating-regime shift (FDR<0.05)")
     print(f"    {n_pos} edges: 2BK operates in higher-curvature regime")
     print(f"    {n_neg} edges: 0BK operates in higher-curvature regime")
+    
+    df_q3a = pd.DataFrame({
+        'EdgeID': np.arange(240),
+        'mean_dC': mean_dC,
+        'p_fdr': p_fdr,
+        'Significant': rejected
+    })
+    df_q3a.to_csv(os.path.join(ARTIFACTS, "q3a_pvalues.csv"), index=False)
+    print("Saved Q3A p-values to results/q3a_pvalues.csv")
     
     print("\n=== Analysis Complete ===")
 

@@ -10,7 +10,9 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from utils_data_loading import load_real_hcp_data
 from models.kan import BrainKAN
 
-DATA_DIR = r"D:\BrainKNN\data"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+ARTIFACTS_DIR = os.path.join(BASE_DIR, "results")
 SEED = 42
 T_RANGE = (-8.0, 12.0)
 R_NULLS = 100 # We can do 100 because we train 1 model per null!
@@ -168,6 +170,18 @@ def main():
     sorted_e = np.argsort(p_values)
     for e in sorted_e[:10]:
         print(f"  Edge {e:>3}: p_emp = {p_values[e]:.4f}, p_fdr = {p_fdr[e]:.4f}, Real G = {G_real[e]:.4f}, Null G mean = {np.mean(G_nulls[:, e]):.4f}, std = {np.std(G_nulls[:, e]):.4f}")
+
+    import pandas as pd
+    df_res = pd.DataFrame({
+        'EdgeID': np.arange(num_edges),
+        'p_emp': p_values,
+        'p_fdr': p_fdr,
+        'G_real': G_real,
+        'G_null_mean': np.mean(G_nulls, axis=0),
+        'G_null_std': np.std(G_nulls, axis=0)
+    })
+    df_res.to_csv(os.path.join(ARTIFACTS_DIR, "q3b_null_summary.csv"), index=False)
+    print("Q3B summary saved to results/q3b_null_summary.csv")
 
 if __name__ == "__main__":
     main()

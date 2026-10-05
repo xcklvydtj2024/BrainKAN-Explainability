@@ -9,11 +9,12 @@ import os
 
 from models.kan import BrainKAN, _b_spline_basis
 
-ARTIFACTS_DIR = r"D:\BrainKNN\results"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ARTIFACTS_DIR = os.path.join(BASE_DIR, "results")
 
 def load_real_hcp_data():
-    print("Loading Real HCP Data from F:\\hcp_processed...")
-    data = np.load(r"D:\BrainKNN\data\HCP_GNN_features.npz")
+    print("Loading Real HCP Data...")
+    data = np.load(os.path.join(BASE_DIR, "data", "HCP_GNN_features.npz"))
     X_np = data['X']
     y_np = data['y']
     
@@ -21,7 +22,7 @@ def load_real_hcp_data():
     X = torch.tensor(X_np, dtype=torch.float32).unsqueeze(-1)
     y = torch.tensor(y_np, dtype=torch.long)
     
-    edges_data = torch.load(r"D:\BrainKNN\data\GNN_Edges.pt")
+    edges_data = torch.load(os.path.join(BASE_DIR, "data", "GNN_Edges.pt"))
     base_edge_index = edges_data['edge_index_A']
     
     dataset = []
