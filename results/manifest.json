@@ -1,0 +1,9 @@
+{
+    "git_commit": "9a14889614eb03bacfb1288f7bb9f82587404d58",
+    "python_version": "3.10.20",
+    "torch_version": "2.14.0+cpu",
+    "torch_geometric_version": "2.8.0.post1",
+    "seed": 42,
+    "n_subjects": 100,
+    "note": "Results generated from exact code state at the git commit above."
+}

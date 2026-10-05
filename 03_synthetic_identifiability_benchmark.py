@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import scipy.stats as stats
 import os
 import multiprocessing as mp
 import time

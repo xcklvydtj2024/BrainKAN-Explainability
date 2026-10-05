@@ -11,6 +11,7 @@ import numpy as np
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from utils_data_loading import load_real_hcp_data
+from models.kan import BrainKAN
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ARTIFACTS_DIR = os.path.join(BASE_DIR, "results")
@@ -102,10 +103,10 @@ def main():
     dataset_pairs = res[0]
     
     print("Evaluating GCN...")
-    gcn_accs = train_and_eval(GCNBaseline, dataset_pairs, epochs=30)
+    gcn_accs = train_and_eval(GCNBaseline, dataset_pairs, epochs=15)
     
     print("Evaluating GAT...")
-    gat_accs = train_and_eval(GATBaseline, dataset_pairs, epochs=30)
+    gat_accs = train_and_eval(GATBaseline, dataset_pairs, epochs=15)
     
     print(f"GCN Mean Accuracy: {np.mean(gcn_accs):.3f}")
     print(f"GAT Mean Accuracy: {np.mean(gat_accs):.3f}")
@@ -117,6 +118,23 @@ def main():
     })
     df.to_csv(os.path.join(ARTIFACTS_DIR, "baseline_accuracies.csv"), index=False)
     print("Saved baseline accuracies to results/baseline_accuracies.csv")
+    
+    # Save parameter counts
+    def count_parameters(model):
+        return sum(p.numel() for p in model.parameters() if p.requires_grad)
+    
+    num_nodes = 48
+    base_edge_index = dataset_pairs[0][0].edge_index
+    gcn = GCNBaseline(1, 16)
+    gat = GATBaseline(1, 8, heads=2)
+    brainkan = BrainKAN(base_edge_index, num_nodes=num_nodes, in_channels=1, hidden_dim=16, num_classes=2)
+    
+    df_params = pd.DataFrame({
+        'Model': ['GCN', 'GAT', 'BrainKAN'],
+        'Parameters': [count_parameters(gcn), count_parameters(gat), count_parameters(brainkan)]
+    })
+    df_params.to_csv(os.path.join(ARTIFACTS_DIR, "model_parameter_counts.csv"), index=False)
+    print("Saved model_parameter_counts.csv")
 
 if __name__ == "__main__":
     main()

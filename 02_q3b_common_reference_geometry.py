@@ -78,18 +78,7 @@ def compute_reference_grids(dataset_pairs, base_edge_index):
         
     return ref_grids
 
-def _b_spline_basis(x: torch.Tensor, grid: torch.Tensor, order: int) -> torch.Tensor:
-    x = x.unsqueeze(-1)
-    bases = ((x >= grid[..., :-1]) & (x < grid[..., 1:])).float()
-    for k in range(1, order + 1):
-        left_num = x - grid[..., : -(k + 1)]
-        left_den = grid[..., k:-1] - grid[..., : -(k + 1)]
-        right_num = grid[..., k + 1 :] - x
-        right_den = grid[..., k + 1 :] - grid[..., 1 : (-k if k > 0 else None)]
-        left = left_num / (left_den + 1e-8) * bases[..., :-1]
-        right = right_num / (right_den + 1e-8) * bases[..., 1:]
-        bases = left + right
-    return bases
+from models.kan import _b_spline_basis
 
 def compute_G(model, ref_grids, base_edge_index):
     num_edges = base_edge_index.shape[1]

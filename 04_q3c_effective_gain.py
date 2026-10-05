@@ -180,6 +180,8 @@ def main():
     ci_lows = []
     ci_highs = []
     consistencies = []
+    cohens_dz = []
+    fold_consistencies = []
     
     for e in range(num_edges):
         # dG_r and dG_n have the same length (n_subjects)
@@ -193,6 +195,17 @@ def main():
         ci_lows.append(np.percentile(diff, 2.5))
         ci_highs.append(np.percentile(diff, 97.5))
         consistencies.append(np.mean(diff > 0))
+        
+        # Cohen's dz
+        std_val = np.std(diff)
+        dz = observed_mean / std_val if std_val > 0 else 0
+        cohens_dz.append(dz)
+        
+        # Fold-level robustness: diff has 100 elements (5 folds * 20 subjects).
+        # We reshape to (5, -1) and calculate fold means.
+        fold_means = np.mean(diff.reshape(5, -1), axis=1)
+        fold_consistency = np.sum(fold_means > 0)
+        fold_consistencies.append(fold_consistency)
         
         if observed_mean <= 0:
             p_values.append(1.0)
@@ -222,9 +235,11 @@ def main():
         'mean_dG_diff': mean_dG_diffs,
         'median_dG_diff': median_dG_diffs,
         'std_dG_diff': std_dG_diffs,
+        'cohens_dz': cohens_dz,
         'diff_p2.5': ci_lows,
         'diff_p97.5': ci_highs,
         'consistency': consistencies,
+        'fold_consistency': fold_consistencies,
         'p_perm': p_values,
         'p_fdr': p_fdr,
         'Significant': p_fdr < 0.05

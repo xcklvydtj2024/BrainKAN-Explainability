@@ -101,7 +101,6 @@ def main():
             ari_scores.append(ari)
             
     print(f"\nNull Models Cross-Fold Cluster Stability (ARI):")
-    print(f"  Real models ARI (reference): ~0.2-0.4 (Typically robust)")
     print(f"  Null models ARI: {np.mean(ari_scores):.4f} +/- {np.std(ari_scores):.4f}")
     
     df_res = pd.DataFrame({'ARI': ari_scores})

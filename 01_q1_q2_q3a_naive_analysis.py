@@ -194,7 +194,7 @@ def run_q1(models, base_edge_index, t_values):
     
     # ---- Plot 1: NL distribution ----
     metrics = ['nl', 'slope', 'curvature', 'monotonicity', 'turning_points', 'active_fraction']
-    titles = ['Nonlinearity (1-R^2)', 'Mean |Slope|', 'Max |f\'\'(t)|',
+    titles = ['Deviation-from-Linearity (DFL)', 'Mean |Slope|', 'Max |f\'\'(t)|',
               'Monotonicity (fraction)', 'Turning Points', 'Active Channels Fraction']
     
     fig, axes = plt.subplots(2, 3, figsize=(18, 10))
@@ -228,7 +228,7 @@ def run_q1(models, base_edge_index, t_values):
     
     fig, axes = plt.subplots(4, 3, figsize=(18, 20))
     fig.suptitle("Q1: Edge Function Gallery (Layer 1, 4 output channels)\n"
-                 "Sorted by increasing nonlinearity. Thin=per-fold, bold=representative fold 0.", fontsize=13)
+                 "Sorted by increasing DFL. Thin=per-fold, bold=representative fold 0.", fontsize=13)
     
     for plot_i, edge_id in enumerate(selected_edges):
         ax = axes[plot_i // 3, plot_i % 3]
@@ -246,7 +246,7 @@ def run_q1(models, base_edge_index, t_values):
             ax.plot(t_np, y_rep, color=ch_colors[ch_i], linewidth=1.8,
                     label=f"ch{ch}" if plot_i == 0 else None)
         
-        ax.set_title(f"Edge {edge_id} (ROI {src}->{dst})\nNL={avg_sigs['nl'][edge_id]:.3f}", fontsize=9)
+        ax.set_title(f"Edge {edge_id} (ROI {src}->{dst})\nDFL={avg_sigs['nl'][edge_id]:.3f}", fontsize=9)
         ax.set_xlabel("t", fontsize=8)
         ax.grid(True, alpha=0.3)
     
@@ -424,7 +424,7 @@ def run_q2(all_curves, all_sigs, avg_sigs, base_edge_index, t_values):
         edges_in_c = np.where(labels_avg == c)[0]
         profile = {f: np.mean(avg_sigs[f][edges_in_c]) for f in feature_names}
         print(f"    Cluster {c} ({len(edges_in_c):>3d} edges): "
-              f"NL={profile['nl']:.3f}  slope={profile['slope']:.3f}  "
+              f"DFL={profile['nl']:.3f}  slope={profile['slope']:.3f}  "
               f"curv={profile['curvature']:.3f}  mono={profile['monotonicity']:.2f}  "
               f"TP={profile['turning_points']:.1f}")
     
