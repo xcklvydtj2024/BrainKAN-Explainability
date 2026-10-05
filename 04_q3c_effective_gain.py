@@ -11,7 +11,7 @@ from models.kan import BrainKAN, _b_spline_basis
 
 # Setup paths
 WORKDIR = os.path.dirname(os.path.abspath(__file__))
-ARTIFACTS = os.path.join(WORKDIR, "artifacts")
+ARTIFACTS = os.path.join(WORKDIR, "results")
 os.makedirs(ARTIFACTS, exist_ok=True)
 
 # Load data and models

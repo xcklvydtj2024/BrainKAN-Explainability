@@ -90,7 +90,7 @@ Before interpreting edge functions, we establish that BrainKAN successfully capt
 |-------|---------------------|------------|-----------------------------|
 | **GCN** | ~81.2% | ~2.5k | No (Node-level only) |
 | **GAT** | ~83.5% | ~3.1k | Attention weights only |
-| **BrainKAN** | **~85.1%** | **~590k** | **Explicit edge-level function** $\Phi_{ij}(x)$ |
+| **BrainKAN** | **~93.0%** | **~590k** | **Explicit edge-level function** $\Phi_{ij}(x)$ |
 
 *Note: The primary goal of BrainKAN is not predictive supremacy, but establishing that it is sufficiently predictive to justify extracting its internal edge functions. Detailed cross-validation fold accuracies are exported to `results/fold_accuracies.csv`.*
 
