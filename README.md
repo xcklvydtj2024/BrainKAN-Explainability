@@ -4,7 +4,10 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
 **Status:** Independent research project / methodological study  
-**Key finding:** Under the tested common-reference estimand, no edge survived FDR correction, indicating that the apparent task-related nonlinear remodeling observed under naive evaluation was not identifiable under the calibrated analysis. **Failure to detect significant edges should not be interpreted as absence of neural changes, but as a limitation of identifying edge-level nonlinear remodeling under the tested estimator.**
+**Key finding:** 
+- Under exploratory calibration (**Q3B**), **0 / 240** edges survived FDR correction, indicating that the apparent task-related curvature shifts in naive evaluations are heavily confounded by input-regime kinematic shifts.
+- However, under held-out effective-gain comparison (**Q3C**), **11 / 240** edges showed statistically significant differences ($p_{\mathrm{FDR}} < 0.05$).
+*Crucially, these two analyses target different estimands ($\boxed{ \text{naive curvature} \neq \text{common-reference structural} \neq \text{effective-gain} }$) and therefore should not be interpreted as contradictory evidence.*
 
 This repository presents an identifiability-aware framework for probing edge-level nonlinear functions in task-fMRI graph models. Rather than treating learned nonlinearities as direct evidence of biological computation, we explicitly test when such interpretations are supported—and when they are confounded by condition-dependent input regimes.
 
@@ -28,8 +31,6 @@ python 01_q1_q2_q3a_naive_analysis.py
 ---
 
 ## 🌟 The Core Scientific Narrative
-
-*(See `assets/workflow.png` for a high-level visual summary of the pipeline)*
 
 ```text
 Scientific Question
@@ -62,13 +63,13 @@ Does a task-related change in regional activation imply a change in edge-level c
                                │
                                ▼
                   No detectable excess
-                  task-related geometry
+                  structural geometry
                                │
                                ▼
                      Effective Gain Q3C
                                │
                                ▼
-                Input shift ≈ Gain modulation
+                   11 / 240 FDR Significant
                                │
                                ▼
                     Synthetic Calibration
@@ -88,8 +89,8 @@ Before interpreting edge functions, we establish that BrainKAN successfully capt
 
 | Model | Mean 5-Fold Accuracy | Parameters | Edge-level Interpretability |
 |-------|---------------------|------------|-----------------------------|
-| **GCN** | ~81.2% | ~2.5k | No (Node-level only) |
-| **GAT** | ~83.5% | ~3.1k | Attention weights only |
+| **GCN** | ~86.0% | ~2.5k | No (Node-level only) |
+| **GAT** | ~90.0% | ~3.1k | Attention weights only |
 | **BrainKAN** | **~93.0%** | **~590k** | **Explicit edge-level function** $\Phi_{ij}(x)$ |
 
 *Note: The primary goal of BrainKAN is not predictive supremacy, but establishing that it is sufficiently predictive to justify extracting its internal edge functions. Detailed cross-validation fold accuracies are exported to `results/fold_accuracies.csv`.*
@@ -112,7 +113,7 @@ The code implements the current analysis protocol. We differentiate full-data ex
   ![Confusability Matrix](assets/figure3_confusability.png)
   
 - **`04_q3c_effective_gain.py`** (Held-Out Calibrated Comparison)
-  Implements the Effective Gain estimator using a stringent **Subject-level 5-fold cross-validation** and a **Subject-level Paired Permutation Test** to formally evaluate condition differences.
+  Implements the Effective Gain estimator using **Subject-level 5-fold cross-validation** and tests significance using **5,000 subject-level paired sign-flip randomizations**. Result: **11/240 edges survived FDR correction**, representing the subset of edges with detectable effective gain differences.
 
 - **`models/`**
   Contains the `EdgeSpecificKANConv` and `BrainKAN` architectural code, utilizing perfectly unified `_b_spline_basis` evaluations to prevent numerical divergence across scales.
@@ -126,13 +127,13 @@ We applied absolute methodological constraints to prevent false positives:
 1. **Statistical Unit**: The atomic unit of inference is the **Subject**, protecting paired nested structures.
 2. **Q3A Null Unification (Authoritative Null)**: We use **Within-Subject Label Swapping** (randomly swapping 0BK $\leftrightarrow$ 2BK per subject) to break task association while preserving topological covariance.
 3. **Q3B Calibration Alignment**: Identical statistic $T = 1-R^2$ computed using identically structured full-data exploratory pipelines for $G^{real}$ and $G^{null}$.
-4. **Q3C Exchangeability**: Evaluated using a Paired Permutation test that flips the sign of $dG_i^{real} - dG_i^{null}$, which uses subject-level paired sign-flipping under the specified strong-null exchangeability assumption.
+4. **Q3C Exchangeability**: Evaluated using a Paired Sign-Flip test. This assumes exchangeability under the null by applying 5,000 random sign assignments to the observed model-derived paired differences ($dG_i^{real} - dG_i^{null}$), conditional on the observed test statistic.
 5. **Handling Out-of-Range Domains**: `np.interp` silent clamping is strictly blocked; out-of-range evaluations map directly to `NaN` and are transparently excluded, preventing artificial flattenings of curvature.
 
 ## ⚖️ Limitations & Future Work
 
 To ensure absolute clarity regarding the scope of this project:
-- **Null Sample Size**: Q3B currently operates on $R_{null}=100$, yielding an empirical resolution of $\sim0.0099$. This is sufficient for our exploratory falsification phase, whereas Q3C correctly shifts to 5,000 permutations for confirmatory inference. Future highly-powered confirmatory studies should extend Q3B empirical nulls beyond 1,000.
+- **Null Sample Size & Sign-Flipping**: Q3B currently operates on $R_{null}=100$ due to computational constraints. For Q3C, we employ 5,000 subject-level paired sign-flip randomizations. This tests if the paired difference is significantly non-zero conditional on the observed models, rather than empirically resampling the true null distribution via 5,000 full-model retraining permutations. Future work should attempt true retrain-permutations if computational budgets allow.
 - **Synthetic Paradigm & Empiric Thresholds**: The S0-S5 synthetic framework currently probes baseline scales, shifts, and nonlinear `tanh` perturbations. Our Confusability Probability Matrix relies on a specific absolute difference threshold ($\tau=0.2$). This maps the empirical confusability under a specific spline estimator and scale, rather than asserting a universal boundary. Further expansion into complex asymmetrical nonlinearities is required.
 - **Hidden Channel Permutation Symmetry**: Layer 1 expands single features to 16 hidden channels. While we average across channels to compute mean curvature or slope, the hidden channels themselves possess permutation symmetry. Demonstrating true channel-level function reproducibility across folds remains a critical neural network identifiability issue for future exploration.
 - **Deviation-from-Linearity**: Our defined Nonlinearity (NL) metric ($1 - R^2$) acts as a *deviation-from-linearity* index. Since the baseline function includes a `SiLU` activation, an edge with a zero spline component is still technically nonlinear.

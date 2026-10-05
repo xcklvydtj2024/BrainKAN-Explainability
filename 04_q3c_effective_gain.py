@@ -174,11 +174,25 @@ def main():
     p_values = []
     n_perms = 5000
     
+    mean_dG_diffs = []
+    median_dG_diffs = []
+    std_dG_diffs = []
+    ci_lows = []
+    ci_highs = []
+    consistencies = []
+    
     for e in range(num_edges):
         # dG_r and dG_n have the same length (n_subjects)
         # We test the hypothesis that mean(dG_r) > mean(dG_n) using permutations
         diff = np.array(real_dG[e]) - np.array(null_dG[e])
         observed_mean = np.mean(diff)
+        
+        mean_dG_diffs.append(observed_mean)
+        median_dG_diffs.append(np.median(diff))
+        std_dG_diffs.append(np.std(diff))
+        ci_lows.append(np.percentile(diff, 2.5))
+        ci_highs.append(np.percentile(diff, 97.5))
+        consistencies.append(np.mean(diff > 0))
         
         if observed_mean <= 0:
             p_values.append(1.0)
@@ -205,6 +219,12 @@ def main():
         'EdgeID': np.arange(num_edges),
         'Real_Gref': real_Gref,
         'Null_Gref': null_Gref,
+        'mean_dG_diff': mean_dG_diffs,
+        'median_dG_diff': median_dG_diffs,
+        'std_dG_diff': std_dG_diffs,
+        'CI_low': ci_lows,
+        'CI_high': ci_highs,
+        'consistency': consistencies,
         'p_perm': p_values,
         'p_fdr': p_fdr,
         'Significant': p_fdr < 0.05
