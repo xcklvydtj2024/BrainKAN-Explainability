@@ -13,7 +13,7 @@
 \maketitle
 
 \begin{abstract}
-This document outlines the formal mathematical framework for the BrainKAN explainability project, providing one-to-one mappings between the theoretical derivations and their concrete implementations in the Python codebase.
+This document outlines the formal mathematical framework for the BrainKAN explainability project, providing one-to-one mappings between the theoretical derivations and their concrete implementations in the Python codebase. Crucially, it formulates rigorous statistical null-models (permutation testing) to demonstrate that many apparent non-linear computational effects in macro-scale connectomics are artifacts of input distribution shifts, highlighting the necessity of structural null-calibration.
 \end{abstract}
 
 \section{Edge-Specific KAN Convolution Architecture}
@@ -22,7 +22,7 @@ Let the task-fMRI functional brain network be represented as a directed graph $G
 \begin{equation}
 h_j^{(l+1)} = \sum_{i \in \mathcal{N}(j)} \Phi_{ij}^{(l)}\left(h_i^{(l)}\right)
 \end{equation}
-Unlike standard Graph Neural Networks (GNNs) that use a shared weight matrix, BrainKAN parameterizes $\Phi_{ij}$ uniquely for every existing edge $(i,j) \in E$ using B-splines. 
+Unlike conventional message-passing layers with shared transformations, BrainKAN parameterizes $\Phi_{ij}$ uniquely for every existing edge $(i,j) \in E$ using B-splines. 
 
 For a scalar input $x$, the edge-specific function is defined as:
 \begin{equation}
@@ -80,7 +80,7 @@ The shift in curvature is then:
 \Delta C_e = C_e(x_j^{2BK}) - C_e(x_j^{0BK})
 \end{equation}
 
-\textit{Note: As discussed, $\Delta C_e$ is mathematically confounded by kinematic shifts. By Taylor expansion around a baseline operating point $x_0$, the apparent curvature change is driven by the shift in input $\Delta x$:}
+\textit{Note: As discussed, $\Delta C_e$ is mathematically confounded by kinematic shifts. Locally, away from points where $f''(x)=0$, a first-order expansion illustrates how operating-regime shifts can induce apparent changes in curvature statistics:}
 \begin{equation}
 \Delta C \approx C'(x_0) \cdot \Delta x + \frac{1}{2}C''(x_0) \cdot \Delta x^2 + \cdots
 \end{equation}
@@ -100,11 +100,16 @@ The intrinsic structural nonlinearity (using DFL as the test statistic $G_e$) is
 \begin{equation}
 G_e = \frac{1}{16} \sum_o (1 - R^2_{e,o,\text{ref}})
 \end{equation}
-The test statistic measuring excess geometry is:
+The observed statistic is:
+\begin{equation}
+T_e^{real} = G_e^{real}
+\end{equation}
+and compared against $\{G_e^{null,r}\}_{r=1}^R$. 
+The effect size measuring excess geometry is:
 \begin{equation}
 \Psi_e = G_e^{real} - E[G_e^{null}]
 \end{equation}
-Statistical significance (yielding 0/240 FDR) is determined by whether $G_e^{real}$ lies in the extreme tail of the empirical null distribution: $\{G^{null,1}_e, \dots, G^{null,R}_e\}$.
+$\Psi_e$ represents the true biological signal isolated from structural and distributional artifacts. Statistical significance (yielding 0/240 FDR) is determined by whether $T_e^{real}$ lies in the extreme tail of the empirical null distribution.
 
 \subsection{Code Implementation}
 \textbf{File:} \texttt{02\_q3b\_common\_reference\_geometry.py} \\
@@ -128,7 +133,7 @@ We test the hypothesis that the paired differences from the real model differ fr
 \begin{equation}
 H_0 \Rightarrow (dG_i^{real}, dG_i^{null}) \overset{d}{=} (dG_i^{null}, dG_i^{real})
 \end{equation}
-Let $T^{real}_e = dG_i^{real} - dG_i^{null}$. The permutation p-value with $R$ sign-flips is:
+Let $T^{real}_e = \sum_i (dG_i^{real} - dG_i^{null})$ and for each permutation $r$, the null statistic is $T^{null,r}_e = \sum_i s_i^{(r)} (dG_i^{real} - dG_i^{null})$ with $s_i^{(r)} \in \{-1, +1\}$. The permutation p-value with $R$ sign-flips is:
 \begin{equation}
 p_e = \frac{1 + \sum_r I(|T^{null,r}_e| \ge |T^{real}_e|)}{R + 1}
 \end{equation}
@@ -154,7 +159,7 @@ S_2 (\text{gain modulation}): \Delta G = -0.082 \pm 0.13
 \begin{equation}
 S_1 \approx S_2
 \end{equation}
-This mathematically proves that input shift and gain modulation are confusable under the tested Q3C estimator. To ensure the estimator can detect true structural remodeling when present, $S_5$ tests a strong true structural change via a common-support comparison distance $D$:
+This demonstrates empirically that input shift and gain modulation are confusable under the tested Q3C estimator. To ensure the estimator can detect true structural remodeling when present, $S_5$ tests a strong true structural change via a common-support comparison distance $D$:
 \begin{equation}
 D_{S5} = 3.574 \pm 0.75 \gg D_{S0} = 0.153 \pm 0.25
 \end{equation}
