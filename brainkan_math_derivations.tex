@@ -1,0 +1,167 @@
+\documentclass{article}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+
+\title{Mathematical Derivations and Code Mappings for BrainKAN Explainability}
+\author{Xin Qi}
+\date{October 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This document outlines the formal mathematical framework for the BrainKAN explainability project, providing one-to-one mappings between the theoretical derivations and their concrete implementations in the Python codebase.
+\end{abstract}
+
+\section{Edge-Specific KAN Convolution Architecture}
+\subsection{Mathematical Formulation}
+Let the task-fMRI functional brain network be represented as a directed graph $G = (V, E)$, where $V$ represents the brain regions of interest (ROIs) and $E$ represents the edges (functional connectivities). For a given layer $l$, the node features are updated via:
+\begin{equation}
+h_j^{(l+1)} = \sum_{i \in \mathcal{N}(j)} \Phi_{ij}^{(l)}\left(h_i^{(l)}\right)
+\end{equation}
+Unlike standard Graph Neural Networks (GNNs) that use a shared weight matrix, BrainKAN parameterizes $\Phi_{ij}$ uniquely for every existing edge $(i,j) \in E$ using B-splines. 
+
+For a scalar input $x$, the edge-specific function is defined as:
+\begin{equation}
+\Phi_{ij}(x) = W^{base}_{ij}\operatorname{SiLU}(x) + \operatorname{spline}_{ij}(x) = W^{base}_{ij} \operatorname{SiLU}(x) + \sum_{k=1}^K w_{ij,k} B_k(x)
+\end{equation}
+where $B_k(x)$ are the B-spline basis functions defined recursively over a uniform grid, and $w_{ij,k}$ are the learnable spline coefficients specifically allocated for the edge $(i, j)$.
+
+The updated node features are:
+\begin{equation}
+h_i' = R(h_i) + \sum_{j} A_{ij}\Phi_{ij}(h_j)
+\end{equation}
+where $R$ is an optional residual connection.
+
+\subsection{Code Implementation}
+\textbf{File:} \texttt{models/kan.py} \\
+\textbf{Class/Function:} \texttt{EdgeSpecificKANConv.forward()} and \texttt{\_b\_spline\_basis()} \\
+The recursive B-spline basis evaluation is centrally implemented in \texttt{\_b\_spline\_basis()}, which is imported throughout the repository to guarantee numerical consistency (e.g., in \texttt{02\_q3b\_common\_reference\_geometry.py}).
+
+\section{Q1: Function Characterization and Deviation-from-Linearity (DFL)}
+\subsection{Mathematical Formulation}
+To characterize whether the learned edge function $\Phi_{ij}$ is actually nonlinear, we evaluate it over a continuous domain $T = [t_{min}, t_{max}]$ and compute the Deviation-From-Linearity (DFL). Let $y(t) = \Phi_{ij}(t)$. We fit a simple linear regression $\hat{y}(t) = a t + b$.
+The DFL is defined as $1 - R^2$, where:
+\begin{equation}
+R^2 = 1 - \frac{\sum_{t \in T} (y(t) - \hat{y}(t))^2}{\sum_{t \in T} (y(t) - \bar{y})^2}
+\end{equation}
+\begin{equation}
+\operatorname{DFL} = 1 - R^2 = \frac{\sum_{t \in T} (y(t) - \hat{y}(t))^2}{\sum_{t \in T} (y(t) - \bar{y})^2}
+\end{equation}
+A higher DFL indicates that the edge function deviates significantly from a pure linear transformation.
+
+\subsection{Code Implementation}
+\textbf{File:} \texttt{01\_q1\_q2\_q3a\_naive\_analysis.py} \\
+\textbf{Function:} \texttt{compute\_function\_signatures()} \\
+The code computes \texttt{ss\_res} (residual sum of squares) and \texttt{ss\_tot} (total sum of squares) to derive $R^2$, and then outputs $\operatorname{DFL}_e = 1 - R^2$. The edge-level DFL is averaged across output channels: $NL_e = \frac{1}{16}\sum_o NL_{e,o}$.
+
+\section{Q2: Function Taxonomy}
+\subsection{Mathematical Formulation}
+To determine if edge functions group into a discrete taxonomy of biological computations, we standardize the function signatures and apply Ward hierarchical clustering for $k=2, \dots, 7$. Cluster quality and fold-level cross-validation stability are measured using Silhouette and Adjusted Rand Index (ARI):
+\begin{equation}
+\operatorname{Silhouette} \approx 0.18 - 0.19, \quad \operatorname{ARI} \approx 0
+\end{equation}
+\textit{This indicates no reproducible small-$k$ discrete taxonomy is detected across folds.}
+
+\subsection{Code Implementation}
+\textbf{Files:} \texttt{01\_q1\_q2\_q3a\_naive\_analysis.py} (Real) and \texttt{05\_q2\_null\_taxonomy.py} (Null).
+
+\section{Q3A: Naive Curvature Remodeling}
+\subsection{Mathematical Formulation}
+The naive curvature effect ($\Delta C$) assesses whether the second derivative of the edge function changes across task conditions ($c \in \{0BK, 2BK\}$). For an edge $e$, the condition-specific naive curvature is calculated over the subject-specific input distribution $X^{(c)}$:
+\begin{equation}
+C_e(x) = \frac{1}{16} \sum_{o=1}^{16} |f_{e,o}''(x)|
+\end{equation}
+The shift in curvature is then:
+\begin{equation}
+\Delta C_e = C_e(x_j^{2BK}) - C_e(x_j^{0BK})
+\end{equation}
+
+\textit{Note: As discussed, $\Delta C_e$ is mathematically confounded by kinematic shifts. By Taylor expansion around a baseline operating point $x_0$, the apparent curvature change is driven by the shift in input $\Delta x$:}
+\begin{equation}
+\Delta C \approx C'(x_0) \cdot \Delta x + \frac{1}{2}C''(x_0) \cdot \Delta x^2 + \cdots
+\end{equation}
+\textit{This demonstrates why $\Delta C^{real} \approx \Delta C^{null}$ under a label-shuffled null, representing an identifiability failure of the naive estimand.}
+
+\subsection{Code Implementation}
+\textbf{File:} \texttt{01\_q1\_q2\_q3a\_naive\_analysis.py} \\
+The script evaluates the second derivative using PyTorch's \texttt{torch.autograd.grad} on the actual task-specific inputs.
+
+\section{Q3B: Common-Reference Null Calibration}
+\subsection{Mathematical Formulation}
+To eliminate the input-regime confounder, we evaluate the learned geometry over a fixed, condition-independent reference grid $x^{ref}_j$, constructed via quantiles of the pooled training distribution:
+\begin{equation}
+x^{ref}_j = Q_{\text{pooled training},j}(q)
+\end{equation}
+The intrinsic structural nonlinearity (using DFL as the test statistic $G_e$) is computed for the real model ($G^{real}$) and compared against $R=100$ null models ($G^{null}$):
+\begin{equation}
+G_e = \frac{1}{16} \sum_o (1 - R^2_{e,o,\text{ref}})
+\end{equation}
+The test statistic measuring excess geometry is:
+\begin{equation}
+\Psi_e = G_e^{real} - E[G_e^{null}]
+\end{equation}
+Statistical significance (yielding 0/240 FDR) is determined by whether $G_e^{real}$ lies in the extreme tail of the empirical null distribution: $\{G^{null,1}_e, \dots, G^{null,R}_e\}$.
+
+\subsection{Code Implementation}
+\textbf{File:} \texttt{02\_q3b\_common\_reference\_geometry.py} \\
+Models are trained identically under true labels vs. subject-level swapped labels. All functions are probed strictly on $X_{ref} = [-8, 12]$.
+
+\section{Q3C: Held-Out Calibrated Effective Gain}
+\subsection{Mathematical Formulation}
+Because Q3B found no excess structural nonlinearity, we test for simpler computational changes: changes in the Effective Gain (the first derivative). To ensure unbiased estimation, we use a fixed condition-independent reference grid $X_{ref}$, strictly computed from the \textit{training fold} to prevent data leakage.
+\begin{equation}
+G_{e,c} = \frac{1}{16} \sum_o \mathbb{E}_{x \sim P_c} \left[ |f_{e,o}'(x)| \right]
+\end{equation}
+Since $f'(x)$ is evaluated via numerical differentiation:
+\begin{equation}
+f'(x) \approx \frac{f(x+\epsilon) - f(x-\epsilon)}{2\epsilon}
+\end{equation}
+The paired difference in effective gain for a subject is:
+\begin{equation}
+dG_i = G_{i}^{2BK} - G_{i}^{0BK}
+\end{equation}
+We test the hypothesis that the paired differences from the real model differ from the null:
+\begin{equation}
+H_0 \Rightarrow (dG_i^{real}, dG_i^{null}) \overset{d}{=} (dG_i^{null}, dG_i^{real})
+\end{equation}
+Let $T^{real}_e = dG_i^{real} - dG_i^{null}$. The permutation p-value with $R$ sign-flips is:
+\begin{equation}
+p_e = \frac{1 + \sum_r I(|T^{null,r}_e| \ge |T^{real}_e|)}{R + 1}
+\end{equation}
+\begin{equation}
+d_z = \frac{\mu_{\Delta G}}{\sigma_{\Delta G}}
+\end{equation}
+where $\mu_{\Delta G}$ and $\sigma_{\Delta G}$ are the mean and standard deviation of $dG_{e,s}^{real} - dG_{e,s}^{null}$ across all test subjects.
+
+\subsection{Code Implementation}
+\textbf{File:} \texttt{04\_q3c\_effective\_gain.py} \\
+\textbf{Functions:} \texttt{evaluate\_Q3C()} and the subsequent statistical testing block. \\
+Cohen's $d_z$ is explicitly calculated as \texttt{observed\_mean / np.std(diff)} and saved in \texttt{q3c\_final\_table.csv}.
+
+\section{Synthetic Identifiability Benchmark}
+\subsection{Mathematical Formulation}
+To define the identifiability boundary, we compare the measured effective gain $\Delta G$ across synthetic scenarios: baseline ($S_0$), input shift ($S_1$), and gain modulation ($S_2$).
+\begin{equation}
+S_1 (\text{input shift}): \Delta G = -0.087 \pm 0.13
+\end{equation}
+\begin{equation}
+S_2 (\text{gain modulation}): \Delta G = -0.082 \pm 0.13
+\end{equation}
+\begin{equation}
+S_1 \approx S_2
+\end{equation}
+This mathematically proves that input shift and gain modulation are confusable under the tested Q3C estimator. To ensure the estimator can detect true structural remodeling when present, $S_5$ tests a strong true structural change via a common-support comparison distance $D$:
+\begin{equation}
+D_{S5} = 3.574 \pm 0.75 \gg D_{S0} = 0.153 \pm 0.25
+\end{equation}
+Rejecting $H_0: S_5 = S_0$ proves the estimator responds to the tested remodeling regime.
+
+\subsection{Code Implementation}
+\textbf{File:} \texttt{03\_synthetic\_identifiability\_benchmark.py} \\
+Simulates S0-S5 using synthetic 1D splines.
+
+\end{document}
