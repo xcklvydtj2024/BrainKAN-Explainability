@@ -3,18 +3,13 @@ import torch.nn.functional as F
 from torch_geometric.loader import DataLoader
 import numpy as np
 
-def train_and_eval_brainkan(train_data, num_nodes, base_edge_index, seed=42, is_null=False, null_seed=None):
+def train_and_eval_brainkan(train_data, num_nodes, base_edge_index, seed=42):
     """
     Trains BrainKAN. 
-    If is_null is True, shuffles the labels inside train_data using null_seed.
+    (Note: Null label shuffling is handled externally by caller scripts 
+    before passing train_data to this function).
     """
     from models.kan import BrainKAN
-    
-    # Optional: shuffle logic if is_null
-    if is_null and null_seed is not None:
-        np.random.seed(null_seed)
-        # Deepcopy train_data or modify in place depending on strategy
-        # Simplified for methodology outline
     
     torch.manual_seed(seed)
     model = BrainKAN(base_edge_index, num_nodes, 1, 16, 2, grid_range=(-8.0, 12.0))
