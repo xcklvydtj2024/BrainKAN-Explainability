@@ -11,8 +11,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models.kan import BrainKAN
 from utils_data_loading import load_real_hcp_data, load_real_chcp_data
 from stats_utils.empirical_null import train_and_eval_brainkan, compute_reference_grid_for_fold
-from experiments.q3b_common_reference import compute_G_for_model
-from experiments.q3c_effective_gain import compute_effective_gain
+import importlib
+q3b = importlib.import_module("experiments.02_q3b_common_reference_geometry")
+compute_G = q3b.compute_G
 
 R_NULLS = 100
 
@@ -62,10 +63,10 @@ def run_chcp_validation():
         train_data = [d for pair in train_pairs for d in pair]
         real_model = train_and_eval_brainkan(train_data, num_nodes, base_edge_index, seed=42)
         
-        G_native = compute_G_for_model(real_model, ref_grid_A, base_edge_index)
+        G_native = compute_G(real_model, ref_grid_A, base_edge_index)
         all_G_native.append(G_native)
         
-        G_frozen = compute_G_for_model(real_model, hcp_ref_grid_B, base_edge_index)
+        G_frozen = compute_G(real_model, hcp_ref_grid_B, base_edge_index)
         all_G_frozen.append(G_frozen)
         
         # Null Models
@@ -78,8 +79,8 @@ def run_chcp_validation():
         ) for r in range(R_NULLS))
         
         print("Evaluating Null Models...")
-        G_null_native_fold = [compute_G_for_model(m, ref_grid_A, base_edge_index) for m in null_models]
-        G_null_frozen_fold = [compute_G_for_model(m, hcp_ref_grid_B, base_edge_index) for m in null_models]
+        G_null_native_fold = [compute_G(m, ref_grid_A, base_edge_index) for m in null_models]
+        G_null_frozen_fold = [compute_G(m, hcp_ref_grid_B, base_edge_index) for m in null_models]
         
         all_null_G_native.append(G_null_native_fold)
         all_null_G_frozen.append(G_null_frozen_fold)

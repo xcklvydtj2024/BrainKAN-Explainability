@@ -109,7 +109,7 @@ The effect size measuring excess geometry is:
 \begin{equation}
 \Psi_e = G_e^{real} - E[G_e^{null}]
 \end{equation}
-$\Psi_e$ represents the true biological signal isolated from structural and distributional artifacts. Statistical significance (yielding 0/240 FDR) is determined by whether $T_e^{real}$ lies in the extreme tail of the empirical null distribution.
+$\Psi_e$ represents the excess structural variance relative to the empirical null expectation. Note that while this calibrates for baseline model flexibility, it does not guarantee isolation of purely "true biological signal," as other unmodelled confounders (e.g., specific preprocessing artifacts or cohort-level structure) may still be present. Statistical significance (yielding 0/240 FDR) is determined by whether $T_e^{real}$ lies in the extreme tail of the empirical null distribution.
 
 \subsection{Code Implementation}
 \textbf{File:} \texttt{02\_q3b\_common\_reference\_geometry.py} \\
@@ -129,13 +129,15 @@ The paired difference in effective gain for a subject is:
 \begin{equation}
 dG_i = G_{i}^{2BK} - G_{i}^{0BK}
 \end{equation}
-We test the hypothesis that the paired differences from the real model differ from the null:
+We test the one-sided hypothesis that the paired differences from the real model exhibit strictly greater effective structural gain than the null:
 \begin{equation}
-H_0 \Rightarrow (dG_i^{real}, dG_i^{null}) \overset{d}{=} (dG_i^{null}, dG_i^{real})
+H_0: \mu_{\Delta G} \le 0 \quad \text{vs} \quad H_1: \mu_{\Delta G} > 0
 \end{equation}
 Let $T^{real}_e = \sum_i (dG_i^{real} - dG_i^{null})$ and for each permutation $r$, the null statistic is $T^{null,r}_e = \sum_i s_i^{(r)} (dG_i^{real} - dG_i^{null})$ with $s_i^{(r)} \in \{-1, +1\}$. The permutation p-value with $R$ sign-flips is:
 \begin{equation}
-p_e = \frac{1 + \sum_r I(|T^{null,r}_e| \ge |T^{real}_e|)}{R + 1}
+p_e = \frac{1 + \sum_r I(T^{null,r}_e \ge T^{real}_e)}{R + 1}
+\end{equation}
+(If $T^{real}_e \le 0$, we trivially set $p_e = 1.0$)
 \end{equation}
 \begin{equation}
 d_z = \frac{\mu_{\Delta G}}{\sigma_{\Delta G}}

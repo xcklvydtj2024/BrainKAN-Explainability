@@ -32,12 +32,15 @@ def generate_data(n, snr, mechanism, strength, input_shift=False):
 def fit_spline(X, Y):
     idx = np.argsort(X)
     X_s, Y_s = X[idx], Y[idx]
-    t = np.linspace(-5, 5, 7)[1:-1]
+    # Use adaptive knots based on data quantiles to prevent out-of-bounds failures under distribution shift
+    t = np.percentile(X_s, [15, 30, 50, 70, 85])
+    is_fallback = False
     try:
         spl = LSQUnivariateSpline(X_s, Y_s, t, k=3, ext=0)
     except:
         spl = np.poly1d(np.polyfit(X_s, Y_s, 1))
-    return spl
+        is_fallback = True
+    return spl, is_fallback
 
 def compute_G(f, X_ref):
     # Compute integral of (f'(x))^2 over X_ref
@@ -53,8 +56,9 @@ def evaluate_sim(args):
     
     X_0, Y_0, X_2, Y_2 = generate_data(n, snr, mech, strength, input_shift=input_shift)
     
-    f_0 = fit_spline(X_0, Y_0)
-    f_2 = fit_spline(X_2, Y_2)
+    f_0, fb0 = fit_spline(X_0, Y_0)
+    f_2, fb2 = fit_spline(X_2, Y_2)
+    fallback_used = fb0 or fb2
     
     # Common support distance D_e
     X_cap_min = max(np.min(X_0), np.min(X_2))
@@ -76,7 +80,8 @@ def evaluate_sim(args):
         'n': n, 'snr': snr, 'mech': mech, 'strength': strength, 'rep': rep,
         'input_shift': input_shift,
         'D_e': D_e,
-        'delta_G': delta_G
+        'delta_G': delta_G,
+        'fallback_used': fallback_used
     }
 
 def main():
@@ -104,6 +109,9 @@ def main():
         results = pool.map(evaluate_sim, tasks)
         
     df = pd.DataFrame(results)
+    fallback_rate = df['fallback_used'].mean() * 100
+    print(f"Spline fitting fallback rate: {fallback_rate:.2f}%")
+    
     os.makedirs(ARTIFACTS_DIR, exist_ok=True)
     df.to_csv(os.path.join(ARTIFACTS_DIR, "synthetic_confusability_results.csv"), index=False)
     print(f"Finished in {time.time()-t0:.1f} seconds. Saved to CSV.")
