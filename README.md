@@ -1,7 +1,7 @@
 # BrainKAN-Explainability: A Null-Calibrated Framework for Evaluating Nonlinear Neural Representations Under Cross-Cohort Distribution Shift
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License--MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/Python--3.10%2B-blue.svg)](https://www.python.org/downloads/)
 
 > **🔔 IMPORTANT:** 
 > **For rigorous mathematical formulations of the support overlap, null-calibrated standardized separation ($Z$-score), and cross-cohort distribution shift quantification, please refer to the [Methodology Whitepaper (PDF)](./BrainKAN_Mathematical_Methodology.pdf).**
