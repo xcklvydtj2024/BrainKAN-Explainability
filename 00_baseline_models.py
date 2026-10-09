@@ -70,8 +70,12 @@ def train_and_eval(model_class, dataset_pairs, epochs=15):
         torch.manual_seed(42 + fold_i)
         if model_class == GCNBaseline:
             model = GCNBaseline(train_data[0].x.shape[1], 16)
-        else:
+        elif model_class == GATBaseline:
             model = GATBaseline(train_data[0].x.shape[1], 8, heads=2)
+        elif model_class == 'GCNBaseline_Large':
+            model = GCNBaseline(train_data[0].x.shape[1], 512)
+        elif model_class == 'GATBaseline_Large':
+            model = GATBaseline(train_data[0].x.shape[1], 128, heads=4)
             
         opt = torch.optim.Adam(model.parameters(), lr=0.005)
         
@@ -107,14 +111,24 @@ def main():
     
     print("Evaluating GAT...")
     gat_accs = train_and_eval(GATBaseline, dataset_pairs, epochs=15)
+
+    print("Evaluating GCN (Large)...")
+    gcn_large_accs = train_and_eval('GCNBaseline_Large', dataset_pairs, epochs=15)
+    
+    print("Evaluating GAT (Large)...")
+    gat_large_accs = train_and_eval('GATBaseline_Large', dataset_pairs, epochs=15)
     
     print(f"GCN Mean Accuracy: {np.mean(gcn_accs):.3f}")
     print(f"GAT Mean Accuracy: {np.mean(gat_accs):.3f}")
+    print(f"GCN_Large Mean Accuracy: {np.mean(gcn_large_accs):.3f}")
+    print(f"GAT_Large Mean Accuracy: {np.mean(gat_large_accs):.3f}")
     
     df = pd.DataFrame({
         'Fold': [1, 2, 3, 4, 5],
         'GCN_Accuracy': gcn_accs,
-        'GAT_Accuracy': gat_accs
+        'GAT_Accuracy': gat_accs,
+        'GCN_Large_Accuracy': gcn_large_accs,
+        'GAT_Large_Accuracy': gat_large_accs
     })
     df.to_csv(os.path.join(ARTIFACTS_DIR, "baseline_accuracies.csv"), index=False)
     print("Saved baseline accuracies to results/baseline_accuracies.csv")
@@ -127,11 +141,13 @@ def main():
     base_edge_index = dataset_pairs[0][0].edge_index
     gcn = GCNBaseline(1, 16)
     gat = GATBaseline(1, 8, heads=2)
+    gcn_large = GCNBaseline(1, 512)
+    gat_large = GATBaseline(1, 128, heads=4)
     brainkan = BrainKAN(base_edge_index, num_nodes=num_nodes, in_channels=1, hidden_dim=16, num_classes=2)
     
     df_params = pd.DataFrame({
-        'Model': ['GCN', 'GAT', 'BrainKAN'],
-        'Parameters': [count_parameters(gcn), count_parameters(gat), count_parameters(brainkan)]
+        'Model': ['GCN', 'GAT', 'GCN_Large', 'GAT_Large', 'BrainKAN'],
+        'Parameters': [count_parameters(gcn), count_parameters(gat), count_parameters(gcn_large), count_parameters(gat_large), count_parameters(brainkan)]
     })
     df_params.to_csv(os.path.join(ARTIFACTS_DIR, "model_parameter_counts.csv"), index=False)
     print("Saved model_parameter_counts.csv")

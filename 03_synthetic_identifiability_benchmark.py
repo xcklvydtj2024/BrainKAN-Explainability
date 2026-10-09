@@ -3,11 +3,11 @@ import pandas as pd
 import os
 import multiprocessing as mp
 import time
+from scipy.interpolate import LSQUnivariateSpline
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ARTIFACTS_DIR = os.path.join(BASE_DIR, "results")
 
-# Helper function to generate data
 def generate_data(n, snr, mechanism, strength, input_shift=False):
     X_0 = np.random.randn(n) * 1.0
     shift_val = 1.5 if input_shift else 0.0
@@ -29,8 +29,6 @@ def generate_data(n, snr, mechanism, strength, input_shift=False):
     
     return X_0, Y_0, X_2, Y_2
 
-# Helper function to fit spline and evaluate
-from scipy.interpolate import LSQUnivariateSpline
 def fit_spline(X, Y):
     idx = np.argsort(X)
     X_s, Y_s = X[idx], Y[idx]
@@ -41,17 +39,24 @@ def fit_spline(X, Y):
         spl = np.poly1d(np.polyfit(X_s, Y_s, 1))
     return spl
 
+def compute_G(f, X_ref):
+    # Compute integral of (f'(x))^2 over X_ref
+    eps = 1e-4
+    derivs = (f(X_ref + eps) - f(X_ref - eps)) / (2 * eps)
+    return np.mean(derivs**2)
+
 def evaluate_sim(args):
-    n, snr, mech, strength, rep = args
+    n, snr, mech, strength, rep, input_shift = args
     import hashlib
-    seed_str = f"{mech}_{n}_{snr}_{strength}_{rep}"
+    seed_str = f"{mech}_{n}_{snr}_{strength}_{rep}_{input_shift}"
     np.random.seed(int(hashlib.md5(seed_str.encode()).hexdigest(), 16) % (2**32))
     
-    X_0, Y_0, X_2, Y_2 = generate_data(n, snr, mech, strength, input_shift=(mech != 'S0'))
+    X_0, Y_0, X_2, Y_2 = generate_data(n, snr, mech, strength, input_shift=input_shift)
     
-    # Common support (M1 vs M5)
     f_0 = fit_spline(X_0, Y_0)
     f_2 = fit_spline(X_2, Y_2)
+    
+    # Common support distance D_e
     X_cap_min = max(np.min(X_0), np.min(X_2))
     X_cap_max = min(np.max(X_0), np.max(X_2))
     if X_cap_min < X_cap_max:
@@ -60,9 +65,18 @@ def evaluate_sim(args):
     else:
         D_e = 0.0
         
+    # Structural Nonlinearity G and Delta G
+    # X_0 is treated as the reference domain
+    X_ref = np.linspace(np.min(X_0), np.max(X_0), 100)
+    G_0 = compute_G(f_0, X_ref)
+    G_2 = compute_G(f_2, X_ref)
+    delta_G = G_2 - G_0
+        
     return {
         'n': n, 'snr': snr, 'mech': mech, 'strength': strength, 'rep': rep,
-        'D_e': D_e
+        'input_shift': input_shift,
+        'D_e': D_e,
+        'delta_G': delta_G
     }
 
 def main():
@@ -72,6 +86,7 @@ def main():
     Ns = [50, 200, 1000, 5000]
     strengths = [0.2, 0.5, 1.0] # Weak, Med, Strong
     reps = 10
+    input_shifts = [False, True]
     
     tasks = []
     for mech in mechanisms:
@@ -79,7 +94,8 @@ def main():
             for n in Ns:
                 for s in strengths:
                     for rep in range(reps):
-                        tasks.append((n, snr, mech, s, rep))
+                        for shift in input_shifts:
+                            tasks.append((n, snr, mech, s, rep, shift))
                         
     print(f"Total simulations to run: {len(tasks)}")
     
@@ -88,15 +104,8 @@ def main():
         results = pool.map(evaluate_sim, tasks)
         
     df = pd.DataFrame(results)
+    os.makedirs(ARTIFACTS_DIR, exist_ok=True)
     df.to_csv(os.path.join(ARTIFACTS_DIR, "synthetic_confusability_results.csv"), index=False)
-    
-    # Compute Confusability Probability Matrix P(D_e < tau)
-    tau = 0.2
-    df['Confused_as_Null'] = df['D_e'] < tau
-    prob_df = df.groupby(['n', 'snr', 'mech', 'strength'])['Confused_as_Null'].mean().reset_index()
-    prob_df.rename(columns={'Confused_as_Null': 'Prob_Indistinguishable'}, inplace=True)
-    prob_df.to_csv(os.path.join(ARTIFACTS_DIR, "confusability_probability_matrix.csv"), index=False)
-    
     print(f"Finished in {time.time()-t0:.1f} seconds. Saved to CSV.")
 
 if __name__ == "__main__":

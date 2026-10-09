@@ -191,13 +191,17 @@ def main():
         
         mean_dG_diffs.append(observed_mean)
         median_dG_diffs.append(np.median(diff))
-        std_dG_diffs.append(np.std(diff))
-        ci_lows.append(np.percentile(diff, 2.5))
-        ci_highs.append(np.percentile(diff, 97.5))
+        std_val = np.std(diff)
+        std_dG_diffs.append(std_val)
+        
+        n_subj = len(diff)
+        sem = std_val / np.sqrt(n_subj)
+        ci_lows.append(observed_mean - 1.96 * sem)
+        ci_highs.append(observed_mean + 1.96 * sem)
+        
         consistencies.append(np.mean(diff > 0))
         
         # Cohen's dz
-        std_val = np.std(diff)
         dz = observed_mean / std_val if std_val > 0 else 0
         cohens_dz.append(dz)
         

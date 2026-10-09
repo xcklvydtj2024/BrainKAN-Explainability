@@ -59,6 +59,16 @@ Rather than directly interpreting learned nonlinear geometry as biological signa
 - **3. Null Model Calibration**: Label-shuffled models are trained to estimate baseline nonlinear deformation caused by model flexibility and data structure.
 - **4. Standardized Separation ($Z$-score)**: Measures task-associated separation relative to null expectation, providing a highly stable metric against cross-cohort shift.
 
+## 💾 Data Availability
+
+The **HCP-YA** dataset tensors are partially provided or can be generated using public data (subject to HCP Data Use Terms). 
+However, the **CHCP** (Chinese Human Connectome Project) dataset is currently restricted due to privacy and data-sharing agreements. Thus, the cross-cohort validation scripts (`chcp_*.py`) cannot be run directly out-of-the-box without authorization. We provide the scripts for transparency and methodology verification.
+
+## 📊 Predictive Adequacy Check
+
+To ensure BrainKAN successfully captures task-related information, we benchmarked it against standard GNNs (GCN, GAT). 
+*Note: The primary goal is **not predictive supremacy**, but establishing predictive adequacy. The capacity gap (BrainKAN ~590k params vs standard GCN ~300 params) makes direct superiority claims unfair, which is why we also include high-capacity GCN/GAT baselines (512+ hidden channels) in our code.*
+
 ## 🚀 Reproducibility
 
 Full reproduction requires substantial compute. You can run all scripts automatically using the provided Makefile.
@@ -85,10 +95,10 @@ make results    # Re-run all analyses
 If you use this repository, please cite:
 
 ```bibtex
-@article{BrainKAN2026,
+@misc{BrainKAN2026,
   title={Assessing Identifiability of Nonlinear Neural Representations Under Cross-Cohort Distribution Shift: A Null-Calibrated Framework for BrainKAN Interpretation},
   author={Xin Qi et al.},
-  journal={TBD},
+  note={Independent Research Project},
   year={2026}
 }
 ```
