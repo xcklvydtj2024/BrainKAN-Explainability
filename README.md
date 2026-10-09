@@ -14,7 +14,9 @@ Rather than directly interpreting learned nonlinear geometry as biological signa
 ## 📌 Main Research Question
 **When a nonlinear neural representation changes across datasets, does this change reflect genuine task-associated structure, or reference-domain/model-induced geometric variation?**
 
-## 🎯 Main Findings (HCP $\rightarrow$ CHCP Transfer)
+## 🎯 Main Findings (Cross-cohort Reference Substitution)
+
+*Note: The cross-cohort evaluation in this repository tests **reference domain substitution** (applying a source cohort's reference grid to a target-cohort-trained model) to isolate extrapolation distortion, rather than zero-shot model transfer.*
 
 | Evaluation | Observation | Interpretation |
 |----------|--------|----------------|
@@ -85,10 +87,11 @@ make results    # Re-run all analyses
 - `experiments/chcp_support_overlap.py` - Extrapolation risk quantification.
 - `experiments/print_chcp_2x2.py` - 2x2 Identifiability matrix extraction.
 
-## ⚖️ Limitations & Future Work
+## ⚖️ Limitations & Statistical Caveats
 
-- **Single Transfer Setting**: This repository presents an empirical evaluation framework currently demonstrated on a single cross-cohort transfer setting (HCP $\rightarrow$ CHCP).
-- **Null Sample Size**: Calibration currently operates on $R_{null}=100$ due to computational constraints.
+- **Reference vs. Model Transfer**: The current implementation validates reference domain substitution on target-trained models. Future work must strictly differentiate this from frozen model weight transfer.
+- **Tail Approximation Uncertainty**: To mitigate high compute costs, the Generalized Pareto Distribution (GPD) tail fit relies on only $R_{null}=100$ null models. This provides a very sparse tail (approx. 10 data points) for parameter estimation, leading to high uncertainty in the extrapolated extreme p-values.
+- **Pseudo-replication in Q3C Inference**: The effective gain difference tests currently operate at the subject level. Because subjects in the same CV fold are evaluated on the same trained model, these observations are not strictly independent, which may artificially inflate degrees of freedom and overstate significance. Future implementations should adopt fold-level inference or mixed-effects models.
 - **Factorial Benchmark**: Future work should implement a fully factorial mechanism × input-shift benchmark to disentangle interaction effects perfectly across multiple cohorts.
 
 ## 📚 Citation
