@@ -188,14 +188,23 @@ O_j = \frac{1}{99} \sum_{k=1}^{99} \mathbb{I}\left( x_{j,k}^{ref} \in [q_{1}(X_j
 \end{equation}
 where $x_{j,k}^{ref}$ are the 99 quantiles of the reference distribution, and $q_{1}, q_{99}$ are the extreme percentiles defining the empirical support of the target data.
 
-Second, to isolate task-associated variation from model-induced and reference-dependent geometric deformation, we calibrate the raw geometry $G_e^{real}$ using an empirical null distribution derived from $R$ independent label-shuffled models evaluated on the same fixed reference domain. The \textit{Standardized Separation} ($Z$-score) is defined as:
+Third, we construct the \textit{2$\times$2 Identifiability Matrix} to decouple true nonlinear variation from reference-domain dependence. We evaluate the non-linearity $G$ under four conditions:
+\begin{equation}
+M = \begin{bmatrix}
+G^{real}_{Native} & G^{real}_{Frozen} \\
+G^{null}_{Native} & G^{null}_{Frozen}
+\end{bmatrix}
+\end{equation}
+A synchronous inflation in both the Real and Null models ($G_{Frozen} > G_{Native}$) indicates that the apparent geometric change is primarily an artifact of the reference shift rather than biological signal.
+
+Finally, to isolate task-associated variation from model-induced and reference-dependent geometric deformation, we calibrate the raw geometry $G_e^{real}$ using an empirical null distribution derived from $R$ independent label-shuffled models evaluated on the same fixed reference domain. The \textit{Standardized Separation} ($Z$-score) is defined as:
 \begin{equation}
 Z_e = \frac{G_e^{real} - \mu(G_e^{null})}{\sigma(G_e^{null})}
 \end{equation}
 where $\mu(G_e^{null})$ and $\sigma(G_e^{null})$ are the sample mean and standard deviation of the structural nonlinearity test statistic $G_e$ computed across the $R$ null models.
 
 \subsection{Code Implementation}
-\textbf{Files:} \texttt{experiments/chcp\_external\_validation.py} and \texttt{experiments/chcp\_support\_overlap.py} \\
+\textbf{Files:} \texttt{experiments/chcp\_external\_validation.py}, \texttt{experiments/chcp\_support\_overlap.py}, and \texttt{experiments/print\_chcp\_2x2.py} \\
 The standardized separation calculation directly maps the formulation by extracting the robust empirical mean and standard deviation from the $R=100$ null permutations, providing a highly stable metric against cross-cohort shift.
 
 \end{document}
