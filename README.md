@@ -60,11 +60,11 @@ Rather than directly interpreting learned nonlinear geometry as biological signa
 - **1. Fixed Reference Domain**: A shared reference domain is constructed exclusively from the training distribution to prevent operating-regime differences from being conflated with nonlinear geometry.
 - **2. Support Overlap ($O_j$)**: Quantifies the potential extrapolation risk when applying a frozen reference grid to the empirical support of the target (CHCP) data.
 - **3. Null Model Calibration**: Label-shuffled models are trained to estimate baseline nonlinear deformation caused by model flexibility and data structure.
-- **4. Standardized Separation ($Z$-score)**: Measures task-associated separation relative to null expectation, providing a more stable metric under the evaluated cross-cohort shift.
+- **4. Standardized Separation ($Z$-score)**: Measures separation between real and null geometric behavior, providing a more stable metric under the evaluated cross-cohort shift.
 
 ## 💾 Data Availability
 
-Raw HCP and CHCP data access follows the respective data-use agreements. Because CHCP access is restricted, the cross-cohort validation scripts cannot be executed without authorization. We provide the scripts for transparency and methodology verification.
+Raw HCP and CHCP data access follows the respective data-use agreements. Because CHCP access is restricted, the cross-cohort validation scripts require authorized access to CHCP data. We provide the scripts for transparency and methodology verification.
 
 ## 📊 Predictive Adequacy Check
 
