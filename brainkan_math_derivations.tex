@@ -169,4 +169,24 @@ Rejecting $H_0: S_5 = S_0$ proves the estimator responds to the tested remodelin
 \textbf{File:} \texttt{03\_synthetic\_identifiability\_benchmark.py} \\
 Simulates S0-S5 using synthetic 1D splines.
 
+\section{Cross-Cohort Distribution Shift and Null-Calibrated Identifiability}
+\subsection{Mathematical Formulation}
+When transferring a nonlinear representation learned on a source cohort (HCP) to a target cohort (CHCP) with substantial distribution compression, naive interpretation is confounded by the change in reference domain.
+
+First, we define the \textit{Support Overlap} $O_j$ to quantify the potential extrapolation risk when applying a frozen reference grid $X_j^{ref}$ (derived from HCP) to the empirical support of the target CHCP data $X_j^{CHCP}$:
+\begin{equation}
+O_j = \frac{1}{99} \sum_{k=1}^{99} \mathbb{I}\left( x_{j,k}^{ref} \in [q_{1}(X_j^{CHCP}), \, q_{99}(X_j^{CHCP})] \right)
+\end{equation}
+where $x_{j,k}^{ref}$ are the 99 quantiles of the reference distribution, and $q_{1}, q_{99}$ are the extreme percentiles defining the empirical support of the target data.
+
+Second, to isolate task-associated variation from model-induced and reference-dependent geometric deformation, we calibrate the raw geometry $G_e^{real}$ using an empirical null distribution derived from $R$ independent label-shuffled models evaluated on the same fixed reference domain. The \textit{Standardized Separation} ($Z$-score) is defined as:
+\begin{equation}
+Z_e = \frac{G_e^{real} - \mu(G_e^{null})}{\sigma(G_e^{null})}
+\end{equation}
+where $\mu(G_e^{null})$ and $\sigma(G_e^{null})$ are the sample mean and standard deviation of the structural nonlinearity test statistic $G_e$ computed across the $R$ null models.
+
+\subsection{Code Implementation}
+\textbf{Files:} \texttt{experiments/chcp\_external\_validation.py} and \texttt{experiments/chcp\_support\_overlap.py} \\
+The standardized separation calculation directly maps the formulation by extracting the robust empirical mean and standard deviation from the $R=100$ null permutations, providing a highly stable metric against cross-cohort shift.
+
 \end{document}
