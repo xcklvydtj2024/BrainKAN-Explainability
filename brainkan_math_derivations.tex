@@ -204,7 +204,12 @@ Z_e = \frac{G_e^{real} - \mu(G_e^{null})}{\sigma(G_e^{null})}
 where $\mu(G_e^{null})$ and $\sigma(G_e^{null})$ are the sample mean and standard deviation of the structural nonlinearity test statistic $G_e$ computed across the $R$ null models.
 
 \subsection{Code Implementation}
-\textbf{Files:} \texttt{experiments/chcp\_external\_validation.py}, \texttt{experiments/chcp\_support\_overlap.py}, and \texttt{experiments/print\_chcp\_2x2.py} \\
+\textbf{Files:}
+\begin{itemize}
+    \item \texttt{experiments/chcp\_external\_validation.py}
+    \item \texttt{experiments/chcp\_support\_overlap.py}
+    \item \texttt{experiments/print\_chcp\_2x2.py}
+\end{itemize}
 The standardized separation calculation directly maps the formulation by extracting the robust empirical mean and standard deviation from the $R=100$ null permutations, providing a highly stable metric against cross-cohort shift.
 
 \end{document}
