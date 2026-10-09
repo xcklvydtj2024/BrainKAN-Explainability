@@ -1,4 +1,5 @@
-# BrainKAN-Explainability: A Null-Calibrated Framework for Evaluating Nonlinear Neural Representations Under Cross-Cohort Distribution Shift
+# BrainKAN-Explainability
+## A Null-Calibrated Framework for Evaluating Nonlinear Neural Representations Under Cross-Cohort Distribution Shift
 
 [![License: MIT](https://img.shields.io/badge/License--MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/Python--3.10%2B-blue.svg)](https://www.python.org/downloads/)
@@ -17,10 +18,10 @@ Rather than directly interpreting learned nonlinear geometry as biological signa
 
 | Evaluation | Observation | Interpretation |
 |----------|--------|----------------|
-| **Raw Nonlinear Geometry** | Highly sensitive to reference domain | Naive interpretation is confounded by input shifts |
-| **Frozen Reference Transfer** | Increased apparent nonlinearity | Extrapolation artifacts mimic structural changes |
-| **Null Model Calibration** | Show synchronous geometric inflation ($G_{Frozen} > G_{Native}$) | Identifies reference shift as the primary driver of apparent change |
-| **Standardized Separation ($Z$)** | Highly stable across reference conditions | Successfully isolates task-associated variation from model-induced artifacts |
+| **Raw Nonlinear Geometry** | Highly sensitive to reference domain | Raw geometry contains reference-dependent components |
+| **Frozen Reference Transfer** | Increased apparent nonlinearity | Indicates potential extrapolation-related distortion |
+| **Null Model Calibration** | Similar inflation under shifted reference | Suggests a substantial reference-induced contribution |
+| **Standardized Separation ($Z$)** | More stable across reference conditions | Provides a stable task-associated separation relative to null expectation |
 
 ## 🌟 The Core Scientific Narrative
 
@@ -49,25 +50,25 @@ Rather than directly interpreting learned nonlinear geometry as biological signa
                  │                             │
                  └──────────────┬──────────────┘
                                 ▼
-                 IDENTIFIABILITY BOUNDARY
+                 IDENTIFIABILITY ASSESSMENT
 ```
 
 ## 🔬 Framework Components
 
-- **1. Fixed Reference Domain**: A shared reference domain is constructed from training data (HCP) only, preventing changes in operating distributions from being conflated with nonlinear geometry.
+- **1. Fixed Reference Domain**: A shared reference domain is constructed exclusively from the training distribution to prevent operating-regime differences from being conflated with nonlinear geometry.
 - **2. Support Overlap ($O_j$)**: Quantifies the potential extrapolation risk when applying a frozen reference grid to the empirical support of the target (CHCP) data.
 - **3. Null Model Calibration**: Label-shuffled models are trained to estimate baseline nonlinear deformation caused by model flexibility and data structure.
 - **4. Standardized Separation ($Z$-score)**: Measures task-associated separation relative to null expectation, providing a highly stable metric against cross-cohort shift.
 
 ## 💾 Data Availability
 
-The **HCP-YA** dataset tensors are partially provided or can be generated using public data (subject to HCP Data Use Terms). 
+Preprocessed examples and scripts are provided where permitted. Raw HCP and CHCP data access follows the respective data-use agreements. 
 However, the **CHCP** (Chinese Human Connectome Project) dataset is currently restricted due to privacy and data-sharing agreements. Thus, the cross-cohort validation scripts (`chcp_*.py`) cannot be run directly out-of-the-box without authorization. We provide the scripts for transparency and methodology verification.
 
 ## 📊 Predictive Adequacy Check
 
 To ensure BrainKAN successfully captures task-related information, we benchmarked it against standard GNNs (GCN, GAT). 
-*Note: The primary goal is **not predictive supremacy**, but establishing predictive adequacy. The capacity gap (BrainKAN ~590k params vs standard GCN ~300 params) makes direct superiority claims unfair, which is why we also include high-capacity GCN/GAT baselines (512+ hidden channels) in our code.*
+*Note: The primary goal is **not predictive supremacy**, but establishing predictive adequacy. The capacity gap (BrainKAN ~590k params vs standard GCN ~300 params) means predictive comparisons should be interpreted as adequacy checks rather than claims of universal predictive superiority. (We also include high-capacity GCN/GAT baselines (512+ hidden channels) in our code for fairness).*
 
 ## 🚀 Reproducibility
 
@@ -98,7 +99,7 @@ If you use this repository, please cite:
 @misc{BrainKAN2026,
   title={Assessing Identifiability of Nonlinear Neural Representations Under Cross-Cohort Distribution Shift: A Null-Calibrated Framework for BrainKAN Interpretation},
   author={Xin Qi et al.},
-  note={Independent Research Project},
+  note={Preprint / Independent Research Project},
   year={2026}
 }
 ```

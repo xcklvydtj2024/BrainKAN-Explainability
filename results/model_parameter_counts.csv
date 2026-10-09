@@ -1,4 +1,6 @@
 Model,Parameters
 GCN,338
 GAT,234
+GCN_Large,264706
+GAT_Large,68226
 BrainKAN,589779
