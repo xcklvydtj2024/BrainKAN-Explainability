@@ -23,7 +23,7 @@ Rather than directly interpreting learned nonlinear geometry as biological signa
 | **Raw Nonlinear Geometry** | Highly sensitive to reference domain | Raw geometry contains reference-dependent components |
 | **Frozen Reference Transfer** | Increased apparent nonlinearity | Indicates potential extrapolation-related distortion |
 | **Null Model Calibration** | Similar inflation under shifted reference | Suggests a substantial reference-induced contribution |
-| **Standardized Separation ($Z$)** | More stable across reference conditions | Provides a stable task-associated separation relative to null expectation |
+| **Standardized Separation ($Z$)** | More stable across reference conditions | Provides a stable separation between real and null geometric behavior |
 
 ## 🌟 The Core Scientific Narrative
 
@@ -47,8 +47,8 @@ Rather than directly interpreting learned nonlinear geometry as biological signa
                                 │
                  ┌──────────────┴──────────────┐
                  ▼                             ▼
-         Raw Geometry                 Standardized Separation (Z-score)
-        (Highly Sensitive)               (Cross-Cohort Stable)
+         Raw Geometry                 (Standardized Separation)
+        (Highly Sensitive)               (Relatively Stable Across Cohorts)
                  │                             │
                  └──────────────┬──────────────┘
                                 ▼
@@ -60,17 +60,24 @@ Rather than directly interpreting learned nonlinear geometry as biological signa
 - **1. Fixed Reference Domain**: A shared reference domain is constructed exclusively from the training distribution to prevent operating-regime differences from being conflated with nonlinear geometry.
 - **2. Support Overlap ($O_j$)**: Quantifies the potential extrapolation risk when applying a frozen reference grid to the empirical support of the target (CHCP) data.
 - **3. Null Model Calibration**: Label-shuffled models are trained to estimate baseline nonlinear deformation caused by model flexibility and data structure.
-- **4. Standardized Separation ($Z$-score)**: Measures task-associated separation relative to null expectation, providing a highly stable metric against cross-cohort shift.
+- **4. Standardized Separation ($Z$-score)**: Measures task-associated separation relative to null expectation, providing a more stable metric under the evaluated cross-cohort shift.
 
 ## 💾 Data Availability
 
-Preprocessed examples and scripts are provided where permitted. Raw HCP and CHCP data access follows the respective data-use agreements. 
-However, the **CHCP** (Chinese Human Connectome Project) dataset is currently restricted due to privacy and data-sharing agreements. Thus, the cross-cohort validation scripts (`chcp_*.py`) cannot be run directly out-of-the-box without authorization. We provide the scripts for transparency and methodology verification.
+Raw HCP and CHCP data access follows the respective data-use agreements. Because CHCP access is restricted, the cross-cohort validation scripts cannot be executed without authorization. We provide the scripts for transparency and methodology verification.
 
 ## 📊 Predictive Adequacy Check
 
-To ensure BrainKAN successfully captures task-related information, we benchmarked it against standard GNNs (GCN, GAT). 
+To establish predictive adequacy of BrainKAN representations, we benchmarked it against standard GNNs (GCN, GAT). 
 *Note: The primary goal is **not predictive supremacy**, but establishing predictive adequacy. The capacity gap (BrainKAN ~590k params vs standard GCN ~300 params) means predictive comparisons should be interpreted as adequacy checks rather than claims of universal predictive superiority. (We also include high-capacity GCN/GAT baselines (512+ hidden channels) in our code for fairness).*
+
+## ⚙️ Installation
+
+```bash
+git clone https://github.com/xcklvydtj2024/BrainKAN-Explainability.git
+cd BrainKAN-Explainability
+pip install -r requirements.txt
+```
 
 ## 🚀 Reproducibility
 
@@ -91,7 +98,7 @@ make results    # Re-run all analyses
 
 - **Reference vs. Model Transfer**: The current implementation validates reference domain substitution on target-trained models. Future work must strictly differentiate this from frozen model weight transfer.
 - **Tail Approximation Uncertainty**: To mitigate high compute costs, the Generalized Pareto Distribution (GPD) tail fit relies on only $R_{null}=100$ null models. This provides a very sparse tail (approx. 10 data points) for parameter estimation, leading to high uncertainty in the extrapolated extreme p-values.
-- **Pseudo-replication in Q3C Inference**: The effective gain difference tests currently operate at the subject level. Because subjects in the same CV fold are evaluated on the same trained model, these observations are not strictly independent, which may artificially inflate degrees of freedom and overstate significance. Future implementations should adopt fold-level inference or mixed-effects models.
+- **Pseudo-replication in Q3C Inference**: The effective gain difference tests currently operate at the subject level. Because subjects in the same CV fold are evaluated on the same trained model, these observations are not strictly independent, which may lead to underestimated uncertainty if fold-level dependence is ignored. Future implementations should adopt fold-level inference or mixed-effects models.
 - **Factorial Benchmark**: Future work should implement a fully factorial mechanism × input-shift benchmark to disentangle interaction effects perfectly across multiple cohorts.
 
 ## 📚 Citation
