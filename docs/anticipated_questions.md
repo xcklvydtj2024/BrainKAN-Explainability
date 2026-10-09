@@ -1,0 +1,23 @@
+# Anticipated Theoretical Questions
+
+This document addresses the most rigorous theoretical and methodological critiques of the BrainKAN explainability framework. It is intended to clarify the exact boundaries of what our estimators prove and what they do not.
+
+## Q1: Why does null calibration isolate "biological signal"?
+**Answer:** It strictly does **not** identify absolute biological truth. 
+What the calibration isolates is the *excess structural deviation relative to the empirical null expectation*. The null model (trained on label-shuffled data) preserves the data topology and the model's architectural flexibility but destroys the task association. Therefore, the residual metric ($Z$-score or $\Psi$) indicates that the geometric structure is associated with the original label distribution. However, this does not rule out unmodelled confounders (e.g., condition-specific motion artifacts or acquisition biases).
+
+## Q2: Does the $Z$-score guarantee a causal mechanism in the brain?
+**Answer:** No.
+The $Z$-score establishes a rigorous statistical correlation between a specific edge's nonlinear computation and the classification task, after controlling for input distribution shifts. It proves that the model *utilizes* this computation to achieve its predictive adequacy. It does not prove that the biological brain actually implements this exact mathematical function ($f_{real}(x)$) locally at that structural edge. It remains an in-silico causal explanation of the model, not an in-vivo causal explanation of the brain.
+
+## Q3: In Q3C (Effective Gain), aren't subject-level metrics from the same cross-validation fold dependent?
+**Answer:** Yes, this is a known statistical limitation (pseudo-replication).
+Because multiple test subjects within the same fold are evaluated using the *same* frozen model weights, their predictions share covariance induced by the training trajectory. Treating these subjects as independent $N$ inflates the degrees of freedom and biases the p-values downwards. A strictly correct implementation would require fold-level summary statistics (which lacks statistical power given $k=5$) or a mixed-effects model. The current FDR-corrected subject-level permutation test should be interpreted as an aggressive discovery metric rather than a rigorous population-level proof.
+
+## Q4: Why use a fixed Reference Domain rather than zero-shot cross-cohort model evaluation?
+**Answer:** They answer fundamentally different mathematical questions.
+Zero-shot model evaluation assesses *predictive generalization* (how well weights trained on distribution $A$ perform on distribution $B$). Our fixed reference domain framework evaluates *structural identifiability* (how the interpretation of the learned function changes when the input density shifts). If we simply push cohort $B$ through model $A$, the resulting geometry is confounded by both the mechanism and the operating regime shift. By enforcing a fixed reference domain, we mathematically isolate the function's structural properties from its domain constraints.
+
+## Q5: How reliable is the GPD tail approximation with only 100 null models?
+**Answer:** It carries extremely high parameter uncertainty.
+With $R=100$, only the top ~10 data points inform the generalized Pareto distribution (GPD) fit. Extrapolating extreme p-values (e.g., $10^{-6}$) from such a sparse tail risks severe estimator variance. It is implemented as a computational heuristic to bypass the $O(1/p)$ compute requirement of empirical permutations. True theoretical rigor would demand $R \ge 10,000$ permutations to bypass parametric assumptions.
