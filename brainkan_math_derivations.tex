@@ -173,7 +173,16 @@ Simulates S0-S5 using synthetic 1D splines.
 \subsection{Mathematical Formulation}
 When transferring a nonlinear representation learned on a source cohort (HCP) to a target cohort (CHCP) with substantial distribution compression, naive interpretation is confounded by the change in reference domain.
 
-First, we define the \textit{Support Overlap} $O_j$ to quantify the potential extrapolation risk when applying a frozen reference grid $X_j^{ref}$ (derived from HCP) to the empirical support of the target CHCP data $X_j^{CHCP}$:
+First, to characterize the magnitude of the global distribution shift before transferring models, we calculate the shift in mean $\Delta\mu$ and the variance ratio $\nu$ between the target (CHCP) and source (HCP) cohorts across all input features:
+\begin{equation}
+\Delta\mu = \mu_{CHCP} - \mu_{HCP}
+\end{equation}
+\begin{equation}
+\nu = \frac{\mathrm{Var}_{CHCP}}{\mathrm{Var}_{HCP}}
+\end{equation}
+The substantial compression in variance ($\nu \approx 0.1412$) constitutes a non-trivial distributional shift that can severely distort geometry.
+
+Second, we define the \textit{Support Overlap} $O_j$ to quantify the potential extrapolation risk when applying a frozen reference grid $X_j^{ref}$ (derived from HCP) to the empirical support of the target CHCP data $X_j^{CHCP}$:
 \begin{equation}
 O_j = \frac{1}{99} \sum_{k=1}^{99} \mathbb{I}\left( x_{j,k}^{ref} \in [q_{1}(X_j^{CHCP}), \, q_{99}(X_j^{CHCP})] \right)
 \end{equation}

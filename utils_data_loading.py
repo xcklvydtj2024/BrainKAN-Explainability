@@ -36,6 +36,29 @@ def load_real_hcp_data():
         
     return dataset, base_edge_index, num_nodes
 
+def load_real_chcp_data():
+    print("Loading Real CHCP Data...")
+    data = np.load(os.path.join(BASE_DIR, "data", "CHCP_GNN_features.npz"))
+    X_np = data['X']
+    y_np = data['y']
+    
+    num_samples, num_nodes = X_np.shape
+    X = torch.tensor(X_np, dtype=torch.float32).unsqueeze(-1)
+    y = torch.tensor(y_np, dtype=torch.long)
+    
+    edges_data = torch.load(os.path.join(BASE_DIR, "data", "GNN_Edges.pt"))
+    base_edge_index = edges_data['edge_index_A']
+    
+    dataset = []
+    num_subjects = num_samples // 2
+    for i in range(num_subjects):
+        dataset.append((
+            Data(x=X[2*i], edge_index=base_edge_index, y=y[2*i]),
+            Data(x=X[2*i+1], edge_index=base_edge_index, y=y[2*i+1])
+        ))
+        
+    return dataset, base_edge_index, num_nodes
+
 def extract_nonlinearity(model, t_values):
     """Extracts nonlinearity index (1-R^2) correctly across input & output channels."""
     conv2 = model.conv2
