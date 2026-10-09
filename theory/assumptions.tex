@@ -1,0 +1,43 @@
+\documentclass{article}
+\usepackage{amsmath, amssymb}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+
+\title{Statistical \& Theoretical Assumptions \\ \large BrainKAN Explainability Framework}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+This document explicitly details the mathematical and statistical assumptions underlying the BrainKAN Explainability framework. Understanding these boundaries is critical for interpreting the $Z$-score and avoiding causal overclaims.
+
+\section*{Assumption 1: Exchangeability of Label Permutation}
+\textbf{Statement:} Under the null hypothesis $H_0$ (no task-associated nonlinear structure), the distribution of the observed geometric test statistic $G_e(f, X)$ is invariant to the permutation of task labels $Y$.
+\begin{equation}
+(X_i, Y_i)_{i=1}^n \overset{d}{=} (X_i, \pi(Y)_i)_{i=1}^n
+\end{equation}
+
+\textbf{Why it is reasonable:} The BrainKAN model minimizes cross-entropy against $Y$. If $Y$ contains no genuine task information linked to $X$, any geometric deformation learned by the model is purely a product of model flexibility, initialization, and input data structure.
+
+\textbf{Violation Consequence:} If the permutation strategy breaks inherent dependencies (e.g., temporal autocorrelation in fMRI or fold-level pseudo-replication) that the null model is supposed to preserve, the empirical null variance $\sigma(G_{null})$ will be underestimated, leading to \textbf{inflated false positives} and artificially high $Z$-scores.
+
+\section*{Assumption 2: Null Preserves Nuisance Geometry}
+\textbf{Statement:} The label-shuffled null model $f_{null}$ successfully captures the geometric deformation induced by reference domain shifts $D(X, f)$ and baseline model capacity, independently of the biological signal $S(f)$.
+\begin{align}
+G(f_{real}, X) &= S(f) + D(X, f_{real}) \\
+G(f_{null}, X) &= D(X, f_{null})
+\end{align}
+
+\textbf{Why it is reasonable:} Deep neural networks exhibit implicit bias and expressivity even when fitting noise. By training $f_{null}$ on the exact same input distribution $X$ with the same hyperparameter budget, it absorbs the geometric complexity necessary to route the data distribution, minus the task constraint.
+
+\textbf{Violation Consequence:} If the true signal $S(f)$ is deeply entangled with the reference deformation (i.e., $D$ is strongly multiplicative rather than additive), the subtraction $G_{real} - \mu(G_{null})$ will fail to fully isolate the signal. This leads to \textbf{biased calibration} where apparent nonlinearities are artifacts of input density rather than function mechanism.
+
+\section*{Assumption 3: Reference Grid Approximates Operating Domain}
+\textbf{Statement:} The fixed reference domain $X_{ref}$ constructed from the source cohort adequately covers the regions of high curvature and function variation expected in the target cohort.
+
+\textbf{Why it is reasonable:} The framework mandates calculating the Support Overlap $O_j$ to explicitly quantify this overlap. If $O_j \to 1$, interpolation holds.
+
+\textbf{Violation Consequence:} If the target cohort operates in a completely disjoint input regime ($O_j \ll 1$), spline evaluations become zero-order extrapolations. In this regime, numerical derivatives explode or vanish arbitrarily. The computed geometry $G_e$ becomes mathematically undefined with respect to the true biological function, rendering the identifiability assessment \textbf{invalid}.
+
+\end{document}
