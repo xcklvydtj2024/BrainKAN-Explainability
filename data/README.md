@@ -52,6 +52,8 @@ The directory contains three core artifacts:
    - PyTorch tensor containing `edge_index_A` of shape `[2, 240]`.
 3. `roi_labels.tsv`:
    - Complete metadata table mapping ROI indices 0–47 to anatomical names, HCP-MMP1 labels, and network affiliations.
+4. `subject_pairing_manifest.csv`:
+   - Complete 100-subject provenance table linking pair index, anonymous subject ID (`sub-HCP100-001` through `sub-HCP100-100`), sample indices, condition labels, ROI/edge counts, and 5-fold CV test partition assignments.
 
 ### Strict Subject Pairing
 The data loader (`utils_data_loading.py`) enforces strict sequential pairing:

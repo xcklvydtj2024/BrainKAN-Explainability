@@ -130,7 +130,9 @@ protocol/
 ## 📑 Mathematical Methodology & Theoretical Whitepapers
 
 For detailed mathematical proofs, derivations, and statistical protocols, see the compiled whitepapers:
-- 📄 **[BrainKAN Mathematical Methodology (PDF)](./BrainKAN_Mathematical_Methodology.pdf)** — Core mathematical derivations, edge B-spline parameterization, and codebase mappings.
+- 🛡️ **[Critical Methodological Defense & Inferential Boundary Conditions (MD)](./docs/critical_methodological_defense_and_bounds.md)** — Point-by-point technical defense addressing faculty review: optimization stochasticity vs. population generalization, Monte Carlo null precision ($B=15$), empirical fallback audit (0/240), fixed gauge invariance rationale, representation vs. test error, and $P \gg N$ capacity calibration.
+- 📋 **[Subject Pairing & Provenance Manifest (CSV)](./data/subject_pairing_manifest.csv)** — Complete data provenance linking all 100 subject pairs (`sub-HCP100-001` to `sub-HCP100-100`) to task conditions, ROI counts, edge counts, and 5-fold CV splits.
+- 📄 **[BrainKAN Mathematical Methodology (PDF)](./docs/BrainKAN_Mathematical_Methodology.pdf)** — Core mathematical derivations, edge B-spline parameterization, and codebase mappings.
 - 📄 **[Anticipated Theoretical & Methodological Questions (PDF)](./docs/Anticipated%20Theoretical%20Questions.pdf)** — Academic defense addressing estimand mismatch, single-seed conditional vs. marginal inference.
 - 📄 **[Mathematical Foundations of Spline Geometry Analysis (PDF)](./docs/Mathematical%20Foundations%20of%20Spline%20Geometry%20Analysis.pdf)** — Anchored operational decomposition and estimand duality.
 - 📄 **[Statistical and Theoretical Assumptions (PDF)](./docs/Statistical%20and%20Theoretical%20Assumptions.pdf)** — Detailed statistical conditions: exchangeability, common support bounding, and optimization marginalization.
@@ -205,6 +207,16 @@ BrainKAN-Explainability/
 │   ├── fig2_reference_domain_effect.png
 │   ├── fig3_seed_variability.png
 │   └── fig4_methodological_framework.png
+├── data/                               # Neuroimaging graph features & subject manifest
+│   ├── HCP_GNN_features.npz
+│   ├── GNN_Edges.pt
+│   └── subject_pairing_manifest.csv   # Verified 100 paired subjects & 5-fold CV splits
+├── docs/                               # Mathematical whitepapers & critical defense
+│   ├── critical_methodological_defense_and_bounds.md
+│   ├── BrainKAN_Mathematical_Methodology.pdf
+│   ├── Anticipated Theoretical Questions.pdf
+│   ├── Mathematical Foundations of Spline Geometry Analysis.pdf
+│   └── Statistical and Theoretical Assumptions.pdf
 ├── models/
 │   └── kan.py                          # Edge-specific B-spline KAN layer & BrainKAN architecture
 ├── experiments/
