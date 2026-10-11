@@ -1,23 +1,38 @@
-# Anticipated Theoretical Questions
+# Anticipated Theoretical & Methodological Questions
+### BrainKAN Interpretability Benchmark
 
-This document addresses the most rigorous theoretical and methodological critiques of the BrainKAN explainability framework. It is intended to clarify the exact boundaries of what our estimators prove and what they do not.
+This document addresses key theoretical and statistical questions regarding the BrainKAN Interpretability Benchmark. It clarifies the boundaries between conditional optimization artifacts, reference-domain dependencies, and population-level scientific claims.
 
-## Q1: Why does null calibration isolate "biological signal"?
-**Answer:** It strictly does **not** identify absolute biological truth. 
-What the calibration isolates is the *excess structural deviation relative to the empirical null expectation*. The null model (trained on label-shuffled data) preserves the data topology and the model's architectural flexibility but destroys the task association. Therefore, the residual metric ($Z$-score or $\Psi$) indicates that the geometric structure is associated with the original label distribution. However, this does not rule out unmodelled confounders (e.g., condition-specific motion artifacts or acquisition biases).
+---
 
-## Q2: Does the $Z$-score guarantee a causal mechanism in the brain?
-**Answer:** No.
-The $Z$-score establishes a rigorous statistical correlation between a specific edge's nonlinear computation and the classification task, after controlling for input distribution shifts. It proves that the model *utilizes* this computation to achieve its predictive adequacy. It does not prove that the biological brain actually implements this exact mathematical function ($f_{real}(x)$) locally at that structural edge. It remains an in-silico causal explanation of the model, not an in-vivo causal explanation of the brain.
+## Q1: Why does null calibration not equate to identifying biological truth?
+**Answer:** It strictly does **not** identify in-vivo biological mechanisms. 
+What the null calibration isolates is the *excess structural deviation relative to the empirical null expectation under the specific optimization procedure*. The null model (trained on label-permuted data) preserves the graph topology and architectural flexibility while destroying task supervision. A residual metric indicates whether the learned geometry is associated with the training labels. It proves how the computational model routes information in-silico, not that the biological brain executes this exact mathematical function locally.
 
-## Q3: In Q3C (Effective Gain), aren't subject-level metrics from the same cross-validation fold dependent?
-**Answer:** Yes, this is a known statistical limitation (pseudo-replication).
-Because multiple test subjects within the same fold are evaluated using the *same* frozen model weights, their predictions share covariance induced by the training trajectory. Treating these subjects as independent $N$ inflates the degrees of freedom and biases the p-values downwards. A strictly correct implementation would require fold-level summary statistics (which lacks statistical power given $k=5$) or a mixed-effects model. The current FDR-corrected subject-level permutation test should be interpreted as an aggressive discovery metric rather than a rigorous population-level proof.
+---
 
-## Q4: Why use a fixed Reference Domain rather than zero-shot cross-cohort model evaluation?
-**Answer:** They answer fundamentally different mathematical questions.
-Zero-shot model evaluation assesses *predictive generalization* (how well weights trained on distribution $A$ perform on distribution $B$). Our fixed reference domain framework evaluates *structural identifiability* (how the interpretation of the learned function changes when the input density shifts). If we simply push cohort $B$ through model $A$, the resulting geometry is confounded by both the mechanism and the operating regime shift. By enforcing a fixed reference domain, we mathematically isolate the function's structural properties from its domain constraints.
+## Q2: Why can a single seed (e.g., Seed 42) achieve $p = 0.006$, yet fail to generalize across seeds?
+**Answer:** Because of an **Estimand Mismatch** (Conditional significance without population-level generalization). 
+Seed 42's result is not a computational mistake or a statistical false positive. It validly tests the conditional null hypothesis:
+$$H_0^{(s=42)}: \Delta_{s=42} = 0$$
+For that specific initialization basin, the real-label model converged to higher curvature than its paired null models. However, the scientific hypothesis of interest is the *marginal population estimand*:
+$$H_0: \mathbb{E}_{s \sim \mathcal{S}} [\Delta_s] \le 0$$
+When marginalizing across 10 independent initialization seeds, 9 out of 10 seeds yield negative differences ($\bar{\Delta} = -0.00058$, $p = 0.9513$). Single-seed inference does not generalize across optimization randomness.
 
-## Q5: How reliable is the GPD tail approximation with only 100 null models?
-**Answer:** It carries extremely high parameter uncertainty.
-With $R=100$, only the top ~10 data points inform the generalized Pareto distribution (GPD) fit. Extrapolating extreme p-values (e.g., $10^{-6}$) from such a sparse tail risks severe estimator variance. It is implemented as a computational heuristic to bypass the $O(1/p)$ compute requirement of empirical permutations. True theoretical rigor would demand $R \ge 10,000$ permutations to bypass parametric assumptions.
+---
+
+## Q3: Why is nonlinearity measurement reference-domain dependent?
+**Answer:** Because curvature and Deviation-From-Linearity (DFL) are operators conditioned on the evaluation support. 
+As demonstrated in Synthetic Calibration (Exp 2-B), evaluating the exact same static mathematical function over shifted input domains causes apparent DFL to jump by $+0.1195$—an artifact two orders of magnitude larger than actual model differences. Unless evaluation is strictly bounded to the common support ($\operatorname{supp}(X_0) \cap \operatorname{supp}(X_1)$), distribution shifts will create false non-linear interpretations.
+
+---
+
+## Q4: What is the true invariant learned by BrainKAN?
+**Answer:** The intrinsic baseline curvature budget ($T \approx 0.179 \pm 0.001$). 
+Regardless of initialization seeds, cross-validation folds, or label permutations, the edge B-splines consistently allocate a substantial degree of functional nonlinearity to route input node features. The model's capacity naturally utilizes curved representations, but task supervision does not drive excess curvature beyond this baseline.
+
+---
+
+## Q5: What is the recommended standard for future interpretable KAN research?
+**Answer:** The Seed-Marginalized Permutation Testing (SMPT) with Common Support protocol. 
+Future studies evaluating spline nonlinearity must: (1) enforce strict common-support domain bounds to prevent extrapolation artifacts, (2) compute paired permutation nulls, and (3) report the seed-marginalized effect $\mathbb{E}_s[\Delta_s]$ across multiple random initializations.

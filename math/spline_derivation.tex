@@ -3,61 +3,56 @@
 \usepackage{geometry}
 \geometry{a4paper, margin=1in}
 
-\title{Mathematical Foundations of Spline Geometry Analysis}
-\author{}
-\date{}
+\title{Mathematical Foundations of Spline Geometry \& Benchmark Estimands}
+\author{Xin Qi}
+\date{October 2026}
 
 \begin{document}
 \maketitle
 
-This document provides the theoretical justification for why we use the geometric metric $G_e$ (based on Deviation-From-Linearity and Curvature) to interpret KAN edge computations, and under what conditions it isolates biological signals.
+This document details the theoretical formulation of spline geometric metrics (Deviation-From-Linearity, DFL) and establishes the distinction between conditional and marginal estimands in KAN interpretability.
 
 \section*{Proposition 1: Reference-Induced Deformation Decomposition}
 
-Let the empirical computation along an edge $(i, j)$ be defined as:
+Let the empirical computation along an edge $(i, j)$ in a Kolmogorov--Arnold Network be parameterized by learnable B-splines:
 \begin{equation}
-\Phi_{ij}(x) = W_{ij}^{base}\text{SiLU}(x) + \sum_k w_{ij,k}B_k(x)
+\Phi_{ij}(x) = W_{ij}^{base}\operatorname{SiLU}(x) + \sum_{k=1}^K w_{ij,k} B_k(x)
 \end{equation}
 
-When evaluating the non-linearity of this function, we compute a geometric test statistic $G(f, X)$ (e.g., integrated squared second derivative or deviation from linear fit) over a defined input distribution $X$.
+When evaluating the non-linearity of this function over a specified evaluation domain $X \subset \mathbb{R}$, we compute the Deviation-From-Linearity (DFL):
+\begin{equation}
+\operatorname{DFL}(\Phi_{ij}, X) = 1 - R^2 = \frac{\sum_{t \in X} (\Phi_{ij}(t) - \hat{y}(t))^2}{\sum_{t \in X} (\Phi_{ij}(t) - \bar{y})^2}
+\end{equation}
 
-\textbf{The Decomposition Hypothesis:}\\
-We assert that the observed geometry can be linearly decomposed into two components:
+\textbf{The Geometric Decomposition:}\\
+The measured geometric curvature over support $X$ decomposes into two components:
 \begin{equation}
 G(f, X) = S(f) + D(X, f)
 \end{equation}
-Where:
-\begin{enumerate}
-    \item $S(f)$ is the \textbf{intrinsic structural component}. This represents the true, task-associated mathematical transformation (e.g., thresholding, saturation) required to solve the biological objective.
-    \item $D(X, f)$ is the \textbf{reference/input-dependent deformation}. This is the artifactual geometry induced by how the function $f$ interpolates the specific input density $X$, constrained by the flexibility of the B-splines.
-\end{enumerate}
+where $S(f)$ is the intrinsic mathematical transformation, and $D(X, f)$ is the domain-dependent deformation induced by evaluating over support $X$. As proven in Exp 2-B, a domain shift alone can inflate $D(X, f)$ by $+0.1195$ without altering the underlying function.
 
-\section*{The Role of Null Calibration}
+\section*{Proposition 2: Optimization Randomness and Estimand Duality}
 
-When evaluating $G(f, X)$ across two different cohorts (e.g., HCP $\to$ CHCP), a naive evaluation yields $G(f_{real}, X_{CHCP})$. If this value changes, it is mathematically impossible to distinguish whether the true task mechanism $S(f)$ changed, or merely the input density $X$ shifted, altering $D(X, f)$.
+Because deep neural networks navigate non-convex loss landscapes, the learned spline parameters $w_{ij,k}(s)$ are stochastic realizations dependent on the random seed $s \sim \mathcal{S}$ (initialization and mini-batch sequence).
 
-To resolve this identifiability failure, we train an empirical null model $f_{null}$ on label-shuffled data. Because $Y_{null}$ contains no task information, the null model requires no intrinsic biological mechanism:
+\subsection*{1. Conditional Estimand}
+For a fixed seed $s$, the conditional excess nonlinearity is defined as:
 \begin{equation}
-S(f_{null}) \approx 0
+\Delta(s) = G(f_{\mathrm{real}}^{(s)}, X) - \mathbb{E}_\pi [G(f_{\mathrm{null}(\pi)}^{(s)}, X)]
+\end{equation}
+Testing $H_0^{(s)}: \Delta(s) \le 0$ evaluates whether real labels induced greater curvature \textit{within the specific optimization basin reached by seed $s$}. For seed $s=42$, $\Delta(42) = +0.0017$ ($p = 0.0060$).
+
+\subsection*{2. Marginal Population Estimand}
+The scientific hypothesis of interest across the optimization distribution is the marginal expectation:
+\begin{equation}
+\Delta_{\mathrm{marginal}} = \mathbb{E}_{s \sim \mathcal{S}} [\Delta(s)] = \mathbb{E}_s [G(f_{\mathrm{real}}^{(s)}, X)] - \mathbb{E}_{s, \pi} [G(f_{\mathrm{null}}^{(s)}, X)]
 \end{equation}
 
-However, $f_{null}$ is trained on the exact same input distribution $X$, utilizing the identical spline flexibility and regularization dynamics. Thus, it fully absorbs the input-dependent deformation:
+\textbf{Empirical Benchmark Finding:}\\
+Evaluating over 10 independent initialization seeds reveals:
 \begin{equation}
-G(f_{null}, X) = D(X, f_{null})
+\Delta_{\mathrm{marginal}} = -0.00058 \le 0 \quad (\text{95\% CI: } [-0.00120, +0.00003], \quad p = 0.9513)
 \end{equation}
-
-By constructing the \textbf{Standardized Separation} estimator (or simply evaluating the difference):
-\begin{align}
-\Psi &= G(f_{real}, X) - G(f_{null}, X) \\
-\Psi &= [S(f_{real}) + D(X, f_{real})] - D(X, f_{null})
-\end{align}
-
-\textbf{Crucial Theoretical Guarantee:}\\
-Assuming the baseline deformation is statistically independent of the true signal mechanism (i.e., $D(X, f_{real}) \approx D(X, f_{null})$ in expectation), the calibration yields:
-\begin{equation}
-\Psi \approx S(f_{real})
-\end{equation}
-
-This proves that the calibrated metric isolates the intrinsic structural behavior relative to the null expectation, removing the confounding effects of $X$. If $\Psi > 0$, the edge exhibits non-linearity exceeding what is forced by the mere routing of the input distribution.
+\textbf{Conclusion:} Under the predefined one-sided alternative, the observed marginal effect does not support rejection of the null hypothesis. Single-seed conditional inference does not generalize across optimization randomness.
 
 \end{document}

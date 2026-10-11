@@ -20,17 +20,14 @@ os.makedirs(ARTIFACTS, exist_ok=True)
 SEED = 42
 N_SPLITS = 5
 N_PROBE = 100
-N_PERMUTATIONS = 100
+N_PERMUTATIONS = 0
 EPOCHS = 15
 
-def extract_fold_dfl(model, t_values):
+def extract_fold_dfl(model, node_t_values, base_edge_index):
     """
-    Computes DFL (1-R^2) for each edge over the fixed fold grid.
-    Returns: array of length num_edges, and number of degeneracies.
+    Computes DFL (1-R^2) for each edge over the fixed fold grid per ROI.
     """
     conv1 = model.conv1
-    t_np = t_values.numpy()
-    batch_size = len(t_values)
     
     num_edges = conv1.num_edges
     in_channels = conv1.in_channels
@@ -40,6 +37,11 @@ def extract_fold_dfl(model, t_values):
     degeneracy_count = 0
     
     for edge_id in range(num_edges):
+        src_node = base_edge_index[0, edge_id].item()
+        t_values = node_t_values[src_node]
+        t_np = t_values.numpy()
+        batch_size = len(t_values)
+
         spline_weight = conv1.spline_weight[edge_id]
         base_weight = conv1.base_weight[edge_id]
         grid = conv1.grid[edge_id]
@@ -72,13 +74,13 @@ def extract_fold_dfl(model, t_values):
         
     return np.array(dfl_scores), degeneracy_count
 
-def permute_labels(train_data):
-    """Subject-level label permutation respecting exchangeability."""
+def permute_labels(train_pairs, train_idx, global_flip_vector):
+    """Subject-level label permutation respecting exchangeability using a global flip vector."""
     permuted_data = []
-    for pair in train_data:
+    for pair, subject_idx in zip(train_pairs, train_idx):
         g0_new = pair[0].clone()
         g1_new = pair[1].clone()
-        if np.random.rand() > 0.5:
+        if global_flip_vector[subject_idx] == 1:
             g0_new.y, g1_new.y = pair[1].y.clone(), pair[0].y.clone()
         permuted_data.append(g0_new)
         permuted_data.append(g1_new)
@@ -115,40 +117,56 @@ def main():
     null_T = {b: [] for b in range(N_PERMUTATIONS)}
     config_record = {'fold_ranges': {}}
     
+    global_flip_vectors = []
+    for b in range(N_PERMUTATIONS):
+        np.random.seed(SEED + b * 100)
+        global_flip_vectors.append(np.random.randint(0, 2, size=len(dataset_pairs)))
+        
     start_time = time.time()
     
     for fold_i, (train_idx, _) in enumerate(kf.split(dataset_pairs)):
         print(f"\n--- Fold {fold_i+1}/{N_SPLITS} ---")
         train_pairs = [dataset_pairs[i] for i in train_idx]
         
-        train_x_vals = []
+        node_x_vals = {n: [] for n in range(num_nodes)}
         for pair in train_pairs:
-            train_x_vals.extend(pair[0].x[:,0].numpy().tolist())
-            train_x_vals.extend(pair[1].x[:,0].numpy().tolist())
+            for n in range(num_nodes):
+                node_x_vals[n].append(pair[0].x[n,0].item())
+                node_x_vals[n].append(pair[1].x[n,0].item())
         
-        r_min, r_max = np.percentile(train_x_vals, 1), np.percentile(train_x_vals, 99)
-        t_range = (r_min, r_max)
-        t_values = torch.linspace(r_min, r_max, N_PROBE)
-        config_record['fold_ranges'][f'Fold_{fold_i+1}'] = (r_min, r_max)
-        print(f"  R_k (1st-99th percentile): [{r_min:.2f}, {r_max:.2f}]")
+        node_t_values = {}
+        global_min, global_max = 0, 0
+        for n in range(num_nodes):
+            r_min = np.percentile(node_x_vals[n], 1)
+            r_max = np.percentile(node_x_vals[n], 99)
+            node_t_values[n] = torch.linspace(r_min, r_max, N_PROBE)
+            if n == 0:
+                global_min, global_max = r_min, r_max
+            else:
+                global_min = min(global_min, r_min)
+                global_max = max(global_max, r_max)
+        
+        t_range = (global_min, global_max) # Used for model initialization grid
+        config_record['fold_ranges'][f'Fold_{fold_i+1}'] = (global_min, global_max)
+        print(f"  Global Grid Range for Fold: [{global_min:.2f}, {global_max:.2f}]")
         
         train_data_real = [d for p in train_pairs for d in p]
         train_loader_real = DataLoader(train_data_real, batch_size=32, shuffle=True)
         
         print("  Training Real Model...")
         model_real = train_model(train_loader_real, base_edge_index, num_nodes, t_range, SEED+fold_i)
-        dfl_real, deg_real = extract_fold_dfl(model_real, t_values)
+        dfl_real, deg_real = extract_fold_dfl(model_real, node_t_values, base_edge_index)
         T_k_real = np.mean(dfl_real)
         real_T.append(T_k_real)
         print(f"    Real T_k: {T_k_real:.4f} (Degenerate channels: {deg_real})")
         
         for b in range(N_PERMUTATIONS):
             np.random.seed(SEED + fold_i + b * 100)
-            permuted_list = permute_labels(train_pairs)
+            permuted_list = permute_labels(train_pairs, train_idx, global_flip_vectors[b])
             train_loader_null = DataLoader(permuted_list, batch_size=32, shuffle=True)
             
             model_null = train_model(train_loader_null, base_edge_index, num_nodes, t_range, SEED+fold_i)
-            dfl_null, _ = extract_fold_dfl(model_null, t_values)
+            dfl_null, _ = extract_fold_dfl(model_null, node_t_values, base_edge_index)
             null_T[b].append(np.mean(dfl_null))
             
             if (b + 1) % 10 == 0:

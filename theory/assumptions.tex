@@ -3,41 +3,41 @@
 \usepackage{geometry}
 \geometry{a4paper, margin=1in}
 
-\title{Statistical \& Theoretical Assumptions \\ \large BrainKAN Explainability Framework}
-\author{}
-\date{}
+\title{Statistical \& Theoretical Assumptions \\ \large BrainKAN Interpretability Benchmark}
+\author{Xin Qi}
+\date{October 2026}
 
 \begin{document}
 \maketitle
 
-This document explicitly details the mathematical and statistical assumptions underlying the BrainKAN Explainability framework. Understanding these boundaries is critical for interpreting the $Z$-score and avoiding causal overclaims.
+This document details the formal mathematical and statistical assumptions underlying the BrainKAN Interpretability Benchmark, defining the conditions required for valid non-linear interpretability.
 
-\section*{Assumption 1: Exchangeability of Label Permutation}
-\textbf{Statement:} Under the null hypothesis $H_0$ (no task-associated nonlinear structure), the distribution of the observed geometric test statistic $G_e(f, X)$ is invariant to the permutation of task labels $Y$.
+\section*{Assumption 1: Exchangeability of Label Permutations}
+\textbf{Statement:} Under the null hypothesis $H_0$ (no task-associated non-linear structure), the distribution of the geometric test statistic $G(f, X)$ is invariant under the permutation of task labels $Y$:
 \begin{equation}
 (X_i, Y_i)_{i=1}^n \overset{d}{=} (X_i, \pi(Y)_i)_{i=1}^n
 \end{equation}
-
-\textbf{Why it is reasonable:} The BrainKAN model minimizes cross-entropy against $Y$. If $Y$ contains no genuine task information linked to $X$, any geometric deformation learned by the model is purely a product of model flexibility, initialization, and input data structure.
-
-\textbf{Violation Consequence:} If the permutation strategy breaks inherent dependencies (e.g., temporal autocorrelation in fMRI or fold-level pseudo-replication) that the null model is supposed to preserve, the empirical null variance $\sigma(G_{null})$ will be underestimated, leading to \textbf{inflated false positives} and artificially high $Z$-scores.
+\textbf{Condition:} Labels are randomized globally at the subject level via paired sign-flips to preserve subject-level graph correlation structures.
 
 \section*{Assumption 2: Null Preserves Nuisance Geometry}
-\textbf{Statement:} The label-shuffled null model $f_{null}$ successfully captures the geometric deformation induced by reference domain shifts $D(X, f)$ and baseline model capacity, independently of the biological signal $S(f)$.
-\begin{align}
-G(f_{real}, X) &= S(f) + D(X, f_{real}) \\
-G(f_{null}, X) &= D(X, f_{null})
-\end{align}
+\textbf{Statement:} The label-shuffled null model $f_{\mathrm{null}}$ successfully captures the baseline geometric deformation induced by model expressivity and input feature routing:
+\begin{equation}
+G(f_{\mathrm{null}}, X) = D(X, f_{\mathrm{null}})
+\end{equation}
+\textbf{Empirical Validation:} BrainKAN models demonstrate an invariant baseline curvature budget of $T \approx 0.179 \pm 0.001$ across both real and null labels, confirming that the network inherently consumes a fixed non-linear capacity budget.
 
-\textbf{Why it is reasonable:} Deep neural networks exhibit implicit bias and expressivity even when fitting noise. By training $f_{null}$ on the exact same input distribution $X$ with the same hyperparameter budget, it absorbs the geometric complexity necessary to route the data distribution, minus the task constraint.
+\section*{Assumption 3: Common Support Evaluation Domain}
+\textbf{Statement:} Spline evaluations must be restricted strictly to the common support between task classes:
+\begin{equation}
+\mathcal{S}_{\mathrm{common}} = \operatorname{supp}(X_0) \cap \operatorname{supp}(X_1)
+\end{equation}
+\textbf{Violation Consequence:} As demonstrated in Exp 2-B, evaluating outside the common support causes artificial DFL inflation up to $+0.1195$, invalidating any biological interpretation.
 
-\textbf{Violation Consequence:} If the true signal $S(f)$ is deeply entangled with the reference deformation (i.e., $D$ is strongly multiplicative rather than additive), the subtraction $G_{real} - \mu(G_{null})$ will fail to fully isolate the signal. This leads to \textbf{biased calibration} where apparent nonlinearities are artifacts of input density rather than function mechanism.
-
-\section*{Assumption 3: Reference Grid Approximates Operating Domain}
-\textbf{Statement:} The fixed reference domain $X_{ref}$ constructed from the source cohort adequately covers the regions of high curvature and function variation expected in the target cohort.
-
-\textbf{Why it is reasonable:} The framework mandates calculating the Support Overlap $O_j$ to explicitly quantify this overlap. If $O_j \to 1$, interpolation holds.
-
-\textbf{Violation Consequence:} If the target cohort operates in a completely disjoint input regime ($O_j \ll 1$), spline evaluations become zero-order extrapolations. In this regime, numerical derivatives explode or vanish arbitrarily. The computed geometry $G_e$ becomes mathematically undefined with respect to the true biological function, rendering the identifiability assessment \textbf{invalid}.
+\section*{Assumption 4: Optimization Marginalization (SMPT)}
+\textbf{Statement:} Valid population-level inference regarding task-associated function properties requires marginalizing over the optimization distribution $\mathcal{S}$:
+\begin{equation}
+\Delta_{\mathrm{marginal}} = \mathbb{E}_{s \sim \mathcal{S}} \left[ G(f_{\mathrm{real}}^{(s)}, X) - \mathbb{E}_\pi [G(f_{\mathrm{null}}^{(s)}, X)] \right]
+\end{equation}
+\textbf{Violation Consequence:} Conditioning on a single initialization seed yields conditional significance (e.g., Seed 42, $p = 0.0060$) that fails to generalize across independent initializations (Exp 5: $\bar{\Delta} = -0.00058$, $p = 0.9513$).
 
 \end{document}

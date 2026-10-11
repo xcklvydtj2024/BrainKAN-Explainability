@@ -1,115 +1,167 @@
-# BrainKAN-Explainability
-## A Null-Calibrated Framework for Evaluating Nonlinear Neural Representations Under Cross-Cohort Distribution Shift
+# BrainKAN-Interpretability-Benchmark
+### *Can neural network nonlinearities reveal biological mechanisms, or are they artifacts of evaluation procedures?*
 
-[![License: MIT](https://img.shields.io/badge/License--MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.10+](https://img.shields.io/badge/Python--3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![PyTorch: 2.1+](https://img.shields.io/badge/PyTorch-2.1%2B-ee4c2c.svg)](https://pytorch.org/)
+[![Dataset: HCP](https://img.shields.io/badge/Dataset-HCP%20fMRI-success.svg)](https://www.humanconnectome.org/)
+[![Reproducibility: 100%](https://img.shields.io/badge/Reproducibility-100%25%20Verified-brightgreen.svg)](#-reproduction)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **🔔 IMPORTANT:** 
-> **For rigorous mathematical formulations of the support overlap, null-calibrated standardized separation ($Z$-score), and cross-cohort distribution shift quantification, please refer to the [Methodology Whitepaper (PDF)](./BrainKAN_Mathematical_Methodology.pdf).**
+---
 
-This repository provides an evaluation framework for assessing the reliability and identifiability of nonlinear representations learned by Kolmogorov-Arnold Networks (KAN) in task-fMRI connectomics. 
+## 🧭 Overview
 
-Rather than directly interpreting learned nonlinear geometry as biological signal, this project investigates how nonlinear representations are affected by reference-domain selection and cross-cohort distribution shifts.
+Kolmogorov–Arnold Networks (KANs) parameterize neural network weights with learnable 1D B-splines, offering unprecedented visual interpretability. In computational neuroscience and connectomics, researchers frequently ask: **"Do the nonlinear spline curves learned on task-fMRI reflect genuine biological computation, or are they evaluation and optimization artifacts?"**
 
-## 📌 Main Research Question
-**When a nonlinear neural representation changes across datasets, does this change reflect genuine task-associated structure, or reference-domain/model-induced geometric variation?**
+This repository provides an empirical and statistical benchmark testing the reliability of KAN interpretability. Using **Human Connectome Project (HCP)** working memory fMRI data ($N=100$ subjects, 2-back vs. 0-back) alongside synthetic ground-truth controls, we systematically stress-test learned edge splines against **reference-domain shifts** and **optimization stochasticity**.
 
-## 🎯 Main Findings (Cross-cohort Reference Substitution)
+---
 
-*Note: The cross-cohort evaluation in this repository tests **reference domain substitution** (applying a source cohort's reference grid to a target-cohort-trained model) to isolate extrapolation distortion, rather than zero-shot model transfer.*
+## 🎯 Key Findings
 
-| Evaluation | Observation | Interpretation |
-|----------|--------|----------------|
-| **Raw Nonlinear Geometry** | Highly sensitive to reference domain | Raw geometry contains reference-dependent components |
-| **Frozen Reference Transfer** | Increased apparent nonlinearity | Indicates potential extrapolation-related distortion |
-| **Null Model Calibration** | Similar inflation under shifted reference | Suggests a substantial reference-induced contribution |
-| **Standardized Separation ($Z$)** | More stable across reference conditions | Provides a stable separation between real and null geometric behavior |
+### 📌 Finding 1: Nonlinearity estimates depend on reference domains
+* **The Illusion**: Evaluating the exact same mathematical function over slightly shifted evaluation intervals causes the measured Deviation-From-Linearity (DFL) to explode by **$+0.1195$** (Exp 2-B), even when the function has zero ground-truth change.
+* **The Principle**: Nonlinearity is **not an invariant property of learned weights**; it is an operator conditioned on the chosen reference domain. Without strict support bounding (Common Support), distribution shifts can create massive false interpretations.
 
-## 🌟 The Core Scientific Narrative
+### 📌 Finding 2: Single-seed conclusions fail under seed marginalization
+* **The Illusion**: A high-precision permutation test on a single default seed (`seed=42`, 500 permutations) yielded an apparent task-induced excess nonlinearity of $\Delta = +0.0017$ with strong statistical significance ($p = 0.0060$).
+* **The Reality**: Across 10 independent initialization seeds (Exp 5), **9 out of 10 seeds yielded negative effects** ($\bar{\Delta} = -0.00058$, 95% CI $[-0.00120, +0.00003]$, $p = 0.9513$).
+* **The Principle**: **Single-seed conditional inference does not generalize across optimization randomness.** The $p=0.0060$ was a valid conditional result for Seed 42, but mistaking it for a population-level biological claim is a failure of estimand generalization.
 
-```text
-                  BrainKAN
-                     │
-          High-capacity nonlinear model
-                     │
-          ┌──────────┴──────────┐
-          ▼                     ▼
- Nonlinear geometry ≠ automatically interpretable
-                                │
-                                ▼
-         Distribution shift may alter geometry (HCP → CHCP)
-                                │
-                                ▼
-               Need identifiability evaluation
-                                │
-                                ▼
-             Reference + Null calibration framework
-                                │
-                 ┌──────────────┴──────────────┐
-                 ▼                             ▼
-         Raw Geometry                 (Standardized Separation)
-        (Highly Sensitive)               (Relatively Stable Across Cohorts)
-                 │                             │
-                 └──────────────┬──────────────┘
-                                ▼
-                 IDENTIFIABILITY ASSESSMENT
-```
+### 📌 Finding 3: Permutation-valid inference requires accounting for optimization uncertainty
+* **The Invariant**: Across all seeds, folds, and label permutations, BrainKAN models converge to a remarkably stable **intrinsic curvature budget** ($T \approx 0.179 \pm 0.001$).
+* **The Principle**: The network maintains substantial baseline spline curvature regardless of label shuffling. True task-induced excess nonlinearity must be evaluated via **Seed-Marginalized Permutation Testing (SMPT)** to marginalize out loss-basin stochasticity.
 
-## 🔬 Framework Components
+---
 
-- **1. Fixed Reference Domain**: A shared reference domain is constructed exclusively from the training distribution to prevent operating-regime differences from being conflated with nonlinear geometry.
-- **2. Support Overlap ($O_j$)**: Quantifies the potential extrapolation risk when applying a frozen reference grid to the empirical support of the target (CHCP) data.
-- **3. Null Model Calibration**: Label-shuffled models are trained to estimate baseline nonlinear deformation caused by model flexibility and data structure.
-- **4. Standardized Separation ($Z$-score)**: Measures separation between real and null geometric behavior, providing a more stable metric under the evaluated cross-cohort shift.
+## 📊 Core Diagnostic Figures
 
-## 💾 Data Availability
+### Figure 1: End-to-End Diagnostic Pipeline
+The benchmark pipeline connecting raw HCP fMRI graphs, edge-specific B-spline convolutions, reference-domain evaluation, and seed-marginalized permutation tests.
+![Figure 1: Pipeline](figures/fig1_pipeline.png)
 
-Raw HCP and CHCP data access follows the respective data-use agreements. Because CHCP access is restricted, the cross-cohort validation scripts require authorized access to CHCP data. We provide the scripts for transparency and methodology verification.
+---
 
-## 📊 Predictive Adequacy Check
+### Figure 2: The Reference Domain Effect (Exp 2 Synthetic Calibration)
+Evaluating the **exact same underlying function** on shifted input domains creates a massive apparent nonlinearity jump ($\Delta = +0.1195$), two orders of magnitude larger than real model differences.
+![Figure 2: Reference Domain Effect](figures/fig2_reference_domain_effect.png)
 
-To establish predictive adequacy of BrainKAN representations, we benchmarked it against standard GNNs (GCN, GAT). 
-*Note: The primary goal is **not predictive supremacy**, but establishing predictive adequacy. The capacity gap (BrainKAN ~590k params vs standard GCN ~300 params) means predictive comparisons should be interpreted as adequacy checks rather than claims of universal predictive superiority. (We also include high-capacity GCN/GAT baselines (512+ hidden channels) in our code for fairness).*
+---
 
-## ⚙️ Installation
+### Figure 3: Optimization Variability Across Seeds (Exp 1 vs. Exp 5)
+Seed 42 is the sole positive outlier ($\Delta = +0.0017$, $p=0.006$). Marginalizing across 10 random seeds reveals that the expected excess nonlinearity is slightly negative ($\bar{\Delta} = -0.00058$, $p=0.9513$).
+![Figure 3: Seed Variability](figures/fig3_seed_variability.png)
 
+---
+
+### Figure 4: Methodological Framework — Pitfalls vs. Recommended Practice
+A side-by-side comparison illustrating how conventional practices lead to false interpretability claims, and how our proposed practical protocol establishes reproducible, statistically honest conclusions.
+![Figure 4: Methodological Framework](figures/fig4_methodological_framework.png)
+
+---
+
+## 🛠️ Recommended Evaluation Protocol
+
+To prevent false claims of "task-induced nonlinearity" in KAN and interpretable GNN research, we propose a practical 3-step evaluation protocol:
+
+1. **Common Support Domain Bounding**:
+   Enforce evaluation exclusively over the overlapping empirical support between classes ($\mathcal{S}_{\mathrm{common}} = \operatorname{supp}(X_0) \cap \operatorname{supp}(X_1)$). Never evaluate on shifted data quantiles or unbounded ranges.
+2. **Paired Permutation Null Models**:
+   Train null models on permuted labels with identical data topology and architecture to estimate the model's baseline curvature budget.
+3. **Seed-Marginalized Permutation Testing (SMPT)**:
+   Define the target estimand as the marginal expectation across optimization seeds:
+   $$\bar{T} = \frac{1}{S}\sum_{s=1}^S T_s, \quad \Delta_{\mathrm{marginal}} = \mathbb{E}_s[T(Y)] - \mathbb{E}_{s, \pi}[T(\pi(Y))]$$
+   Do not base scientific conclusions on a single random seed.
+
+---
+
+## 🚀 Reproduction & Benchmark Commands
+
+All experiments are fully deterministic and reproducible.
+
+### 1. Installation
 ```bash
-git clone https://github.com/xcklvydtj2024/BrainKAN-Explainability.git
-cd BrainKAN-Explainability
+git clone https://github.com/xcklvydtj2024/BrainKAN-Explainability.git BrainKAN-Interpretability-Benchmark
+cd BrainKAN-Interpretability-Benchmark
 pip install -r requirements.txt
 ```
 
-## 🚀 Reproducibility
-
-Full reproduction requires substantial compute. You can run all scripts automatically using the provided Makefile.
-
+### 2. Run Synthetic Calibration (Exp 2)
+Tests reference-domain shift and density weighting on ground-truth functions:
 ```bash
-make tests      # Run unit tests (requires pytest)
-make baseline   # Run baseline GCN/GAT adequacy check
-make results    # Re-run all analyses
+python experiments/exp2_synthetic_calibration.py
 ```
 
-### 📂 Key Implementation Files
-- `experiments/chcp_external_validation.py` - Core cross-cohort calibration logic.
-- `experiments/chcp_support_overlap.py` - Extrapolation risk quantification.
-- `experiments/print_chcp_2x2.py` - 2x2 Identifiability matrix extraction.
+### 3. Run Common Support Domain Control (Exp 3)
+Tests whether the measured nonlinearity persists when restricting evaluation strictly to overlapping support:
+```bash
+python experiments/exp3_reference_domain_control.py
+```
 
-## ⚖️ Limitations & Statistical Caveats
+### 4. Run Multi-Seed Stability Scan (Exp 5)
+Runs parallel evaluation across 10 independent initialization seeds:
+```bash
+python experiments/run_exp5_parallel.py
+```
 
-- **Reference vs. Model Transfer**: The current implementation validates reference domain substitution on target-trained models. Future work must strictly differentiate this from frozen model weight transfer.
-- **Tail Approximation Uncertainty**: To mitigate high compute costs, the Generalized Pareto Distribution (GPD) tail fit relies on only $R_{null}=100$ null models. This provides a very sparse tail (approx. 10 data points) for parameter estimation, leading to high uncertainty in the extrapolated extreme p-values.
-- **Pseudo-replication in Q3C Inference**: The effective gain difference tests currently operate at the subject level. Because subjects in the same CV fold are evaluated on the same trained model, these observations are not strictly independent, which may lead to underestimated uncertainty if fold-level dependence is ignored. Future implementations should adopt fold-level inference or mixed-effects models.
-- **Factorial Benchmark**: Future work should implement a fully factorial mechanism × input-shift benchmark to disentangle interaction effects perfectly across multiple cohorts.
+### 5. Generate Publication Figures
+Generates all 4 core figures at 300 DPI:
+```bash
+python experiments/plot_four_core_figures.py
+```
+
+---
+
+## 📁 Repository Structure
+
+```text
+BrainKAN-Interpretability-Benchmark/
+├── figures/                            # 4 Core publication-quality diagnostic figures
+│   ├── fig1_pipeline.png
+│   ├── fig2_reference_domain_effect.png
+│   ├── fig3_seed_variability.png
+│   └── fig4_methodological_framework.png
+├── models/
+│   └── kan.py                          # Edge-specific B-spline KAN layer & BrainKAN architecture
+├── experiments/
+│   ├── 07_primary_statistical_analysis.py # DFL extraction & paired permutation core logic
+│   ├── exp1_high_precision_permutation.py # High-precision 500-sample permutation runner
+│   ├── exp2_synthetic_calibration.py   # Ground-truth synthetic calibration (Exp 2-A/B/C)
+│   ├── exp3_reference_domain_control.py# Common support evaluation (Exp 3)
+│   ├── exp4_multi_seed_robustness.py   # Hidden capacity & seed sensitivity scan (Exp 4)
+│   ├── exp5_runner.py                  # Multi-seed parallel worker (Exp 5)
+│   ├── run_exp5_parallel.py            # Orchestrator for 10-seed SMPT test
+│   └── plot_four_core_figures.py       # Standalone figure generation script
+├── protocol/                           # Frozen experimental protocol & decision rules
+│   ├── analysis_plan_v2.md
+│   ├── estimands.md
+│   └── decision_rules.md
+├── results/                            # Experimental CSV outputs and manifest
+│   ├── exp1_high_precision/
+│   ├── exp2_synthetic/
+│   ├── exp3_ref_domain/
+│   ├── exp5_seed_stability/
+│   └── manifest.json
+└── README.md
+```
+
+---
+
+## ⚖️ Scientific & Methodological Disclaimer
+
+This benchmark serves as a **methodological study and stress test** for neural network interpretability. The goal is to provide reliable evaluation protocols for white-box AI models in neuroimaging. Our findings show that edge-specific splines possess an intrinsic structural expressivity budget, but individual spline shapes cannot be causally interpreted as in-vivo biological mechanisms without accounting for reference-domain conditioning and optimization randomness.
+
+---
 
 ## 📚 Citation
 
-If you use this repository, please cite:
+If you use this benchmark or evaluation protocol in your research, please cite:
 
 ```bibtex
-@misc{BrainKAN2026,
-  title={Assessing Identifiability of Nonlinear Neural Representations Under Cross-Cohort Distribution Shift: A Null-Calibrated Framework for BrainKAN Interpretation},
-  author={Xin Qi et al.},
-  note={Preprint / Independent Research Project},
+@article{BrainKAN_Benchmark_2026,
+  title={When Nonlinearity Misleads: Reference-Domain and Optimization Variability in Interpreting Kolmogorov--Arnold Network Representations},
+  author={Qi, Xin and Collaborators},
+  journal={arXiv preprint},
   year={2026}
 }
 ```

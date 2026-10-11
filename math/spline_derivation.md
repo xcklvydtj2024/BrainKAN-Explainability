@@ -1,37 +1,39 @@
-# Mathematical Foundations of Spline Geometry Analysis
+# Mathematical Foundations of Spline Geometry & Benchmark Estimands
 
-This document provides the theoretical justification for why we use the geometric metric $G_e$ (based on Deviation-From-Linearity and Curvature) to interpret KAN edge computations, and under what conditions it isolates biological signals.
+This document details the theoretical formulation of spline geometric metrics (Deviation-From-Linearity, DFL) and establishes the distinction between conditional and marginal estimands in KAN interpretability.
+
+---
 
 ## Proposition 1: Reference-Induced Deformation Decomposition
 
-Let the empirical computation along an edge $(i, j)$ be defined as:
-$$ \Phi_{ij}(x) = W_{ij}^{base}\text{SiLU}(x) + \sum_k w_{ij,k}B_k(x) $$
+Let the empirical computation along an edge $(i, j)$ in a Kolmogorov–Arnold Network be parameterized by learnable B-splines:
+$$\Phi_{ij}(x) = W_{ij}^{base}\operatorname{SiLU}(x) + \sum_{k=1}^K w_{ij,k} B_k(x)$$
 
-When evaluating the non-linearity of this function, we compute a geometric test statistic $G(f, X)$ (e.g., integrated squared second derivative or deviation from linear fit) over a defined input distribution $X$.
+When evaluating the non-linearity of this function over a specified evaluation domain $X \subset \mathbb{R}$, we compute the Deviation-From-Linearity (DFL):
+$$\operatorname{DFL}(\Phi_{ij}, X) = 1 - R^2 = \frac{\sum_{t \in X} (\Phi_{ij}(t) - \hat{y}(t))^2}{\sum_{t \in X} (\Phi_{ij}(t) - \bar{y})^2}$$
 
-**The Decomposition Hypothesis:**
-We assert that the observed geometry can be linearly decomposed into two components:
-$$ G(f, X) = S(f) + D(X, f) $$
-Where:
-1. $S(f)$ is the **intrinsic structural component**. This represents the true, task-associated mathematical transformation (e.g., thresholding, saturation) required to solve the biological objective.
-2. $D(X, f)$ is the **reference/input-dependent deformation**. This is the artifactual geometry induced by how the function $f$ interpolates the specific input density $X$, constrained by the flexibility of the B-splines.
+### The Geometric Decomposition
+The measured geometric curvature over support $X$ decomposes into two components:
+$$G(f, X) = S(f) + D(X, f)$$
+where $S(f)$ is the intrinsic mathematical transformation, and $D(X, f)$ is the domain-dependent deformation induced by evaluating over support $X$. As proven in Exp 2-B, a domain shift alone can inflate $D(X, f)$ by $+0.1195$ without altering the underlying function.
 
-## The Role of Null Calibration
+---
 
-When evaluating $G(f, X)$ across two different cohorts (e.g., HCP $\to$ CHCP), a naive evaluation yields $G(f_{real}, X_{CHCP})$. If this value changes, it is mathematically impossible to distinguish whether the true task mechanism $S(f)$ changed, or merely the input density $X$ shifted, altering $D(X, f)$.
+## Proposition 2: Optimization Randomness and Estimand Duality
 
-To resolve this identifiability failure, we train an empirical null model $f_{null}$ on label-shuffled data. Because $Y_{null}$ contains no task information, the null model requires no intrinsic biological mechanism:
-$$ S(f_{null}) \approx 0 $$
+Because deep neural networks navigate non-convex loss landscapes, the learned spline parameters $w_{ij,k}(s)$ are stochastic realizations dependent on the random seed $s \sim \mathcal{S}$ (initialization and mini-batch sequence).
 
-However, $f_{null}$ is trained on the exact same input distribution $X$, utilizing the identical spline flexibility and regularization dynamics. Thus, it fully absorbs the input-dependent deformation:
-$$ G(f_{null}, X) = D(X, f_{null}) $$
+### 1. Conditional Estimand
+For a fixed seed $s$, the conditional excess nonlinearity is defined as:
+$$\Delta(s) = G(f_{\mathrm{real}}^{(s)}, X) - \mathbb{E}_\pi [G(f_{\mathrm{null}(\pi)}^{(s)}, X)]$$
+Testing $H_0^{(s)}: \Delta(s) \le 0$ evaluates whether real labels induced greater curvature *within the specific optimization basin reached by seed $s$*. For seed $s=42$, $\Delta(42) = +0.0017$ ($p = 0.0060$).
 
-By constructing the **Standardized Separation** estimator (or simply evaluating the difference):
-$$ \Psi = G(f_{real}, X) - G(f_{null}, X) $$
-$$ \Psi = [S(f_{real}) + D(X, f_{real})] - D(X, f_{null}) $$
+### 2. Marginal Population Estimand
+The scientific hypothesis of interest across the optimization distribution is the marginal expectation:
+$$\Delta_{\mathrm{marginal}} = \mathbb{E}_{s \sim \mathcal{S}} [\Delta(s)] = \mathbb{E}_s [G(f_{\mathrm{real}}^{(s)}, X)] - \mathbb{E}_{s, \pi} [G(f_{\mathrm{null}}^{(s)}, X)]$$
 
-**Crucial Theoretical Guarantee:**
-Assuming the baseline deformation is statistically independent of the true signal mechanism (i.e., $D(X, f_{real}) \approx D(X, f_{null})$ in expectation), the calibration yields:
-$$ \Psi \approx S(f_{real}) $$
+### Empirical Benchmark Finding
+Evaluating over 10 independent initialization seeds reveals:
+$$\Delta_{\mathrm{marginal}} = -0.00058 \le 0 \quad (\text{95\% CI: } [-0.00120, +0.00003], \quad p = 0.9513)$$
 
-This proves that the calibrated metric isolates the intrinsic structural behavior relative to the null expectation, removing the confounding effects of $X$. If $\Psi > 0$, the edge exhibits non-linearity exceeding what is forced by the mere routing of the input distribution.
+**Conclusion:** Under the predefined one-sided alternative, the observed marginal effect does not support rejection of the null hypothesis. Single-seed conditional inference does not generalize across optimization randomness.

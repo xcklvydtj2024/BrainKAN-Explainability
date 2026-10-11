@@ -10,7 +10,11 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models.kan import BrainKAN
-from experiments.07_primary_statistical_analysis import extract_fold_dfl, permute_labels, train_model
+import importlib
+p07 = importlib.import_module("experiments.07_primary_statistical_analysis")
+extract_fold_dfl = p07.extract_fold_dfl
+permute_labels = p07.permute_labels
+train_model = p07.train_model
 from utils_data_loading import load_real_hcp_data, load_real_chcp_data
 
 ARTIFACTS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results", "robustness")

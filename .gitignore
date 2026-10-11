@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 .venv/
 artifacts/
+tectonic.zip
+tectonic/
+fix_math.py
