@@ -86,7 +86,7 @@ With network-level test statistic $T = \frac{1}{|E|} \sum_{e \in E} \operatornam
 
 $$\boxed{p = \frac{1 + \#\{T_b \ge T_{\mathrm{obs}}\}}{B + 1} = \frac{1 + 2}{500 + 1} = \frac{3}{501} \approx 0.00599}$$
 
-- Monte Carlo Precision: The 500 null values yielded sample mean $\bar{T}_{\mathrm{null}} = 0.17733$ and sample standard deviation $\sigma_{\mathrm{null}} = 0.000585$, establishing a Monte Carlo standard error of $\mathrm{SE}_{\mathrm{MC}} = \frac{0.000585}{\sqrt{500}} \approx 0.000026$.
+- Monte Carlo Precision: The 500 null values yielded sample mean $\bar{T}_{\mathrm{null}} = 0.17733$ and sample standard deviation $\sigma_{\mathrm{null}} = 0.000585$. The standard error of the estimated null mean was approximately $\mathrm{SE}(\bar{T}_{\mathrm{null}}) = \frac{0.000585}{\sqrt{500}} \approx 2.6 \times 10^{-5}$. This characterizes the precision of the location parameter of the null distribution, and should not be confused with the Monte Carlo uncertainty of the permutation $p$-value itself ($\mathrm{SE}(\hat{p}) \approx \sqrt{\hat{p}(1-\hat{p})/B} \approx 0.0035$).
 
 ### 3.3 Inferential Boundaries
 Rather than stopping at reporting statistical significance, we explicitly articulate the inferential boundaries:
@@ -109,8 +109,8 @@ In Exp 5, across $S = 10$ independent random optimization seeds ($w_0 \sim \math
 | **Empirical Common Support ($\mathcal{S}_{\mathrm{common}}$)** | $[q_1^{(0)}, q_{99}^{(0)}] \cap [q_1^{(1)}, q_{99}^{(1)}]$ | **$+0.000896$** ($\pm 0.00055$) | 9 / 10 Positive | $t = +5.186$ | $p = 0.0003$ |
 
 ### 4.2 Methodological Diagnosis
-1. Extrapolation on the Pooled Grid: Across 48 ROIs on HCP fMRI data, the Jaccard overlap between 0-Back and 2-Back empirical distributions averages $38.52\% \pm 5.08\%$ (covering $43.47\%$ of the pooled span). On $\mathcal{S}_{\mathrm{pooled}}$, splines are evaluated outside their empirical training range; boundary polynomial oscillation dominates subtle task signals, producing negative expectations for 9 out of 10 initializations.
-2. Isolation of the Empirical Overlap Region: Restricting evaluation to the empirical overlap region $[q_1^{(0)}, q_{99}^{(0)}] \cap [q_1^{(1)}, q_{99}^{(1)}]$ filters out boundary extrapolation noise. Under this invariant domain, 9 out of 10 seeds consistently exhibit positive excess curvature.
+1. Sensitivity to Support Coverage: Across 48 ROIs on HCP fMRI data, the Jaccard overlap between 0-Back and 2-Back empirical distributions averages $38.52\% \pm 5.08\%$ (covering $43.47\%$ of the pooled span). On $\mathcal{S}_{\mathrm{pooled}}$, splines are evaluated across domains where empirical density is sparse or condition-asymmetric, yielding negative expectations for 9 out of 10 initializations.
+2. Isolation of the Empirical Overlap Region: Restricting evaluation to the empirical overlap region $[q_1^{(0)}, q_{99}^{(0)}] \cap [q_1^{(1)}, q_{99}^{(1)}]$ yields consistent positive excess curvature across 9 out of 10 seeds. The observed sign reversal is consistent with sensitivity to boundary extrapolation, although the precise contribution of extrapolation relative to other domain-dependent effects remains to be isolated.
 
 ### 4.3 Research Boundary Demarcation
 - Optimization Stochasticity vs. Population Generalization: The paired $t$-statistic ($t = 5.186, p = 0.0003$) evaluates initialization consistency conditional on the fixed cohort sample and fixed 15 permutation vectors. It does not establish generalizability across biological subject populations ($\mathcal{D} \sim \mathcal{P}$).
@@ -125,5 +125,5 @@ This benchmark illustrates core methodological competencies essential for advanc
 
 1. **Metric Scrutiny over Black-Box Metrics:** Rather than treating $\operatorname{DFL} = 1 - R^2$ as an intrinsic measure of biological curvature, we formalized it as an empirical projection residual against an affine hypothesis class and demonstrated its joint location-scale sensitivity via synthetic counterexamples.
 2. **Principled Statistical Inference:** Rather than celebrating an empirical $p \approx 0.006$ as "proof of neural mechanisms," we explicitly articulated the conditioning on label exchangeability, model capacity, and dataset-specific baselines.
-3. **Estimand Awareness & Scientific Restraint:** Discovering that the sign of the effect inverts (from $-0.00058$ to $+0.00090$) between the pooled domain and the empirical overlap region prevented false scientific conclusions, demonstrating that what appears to be a biological effect can be entirely dictated by the choice of integration domain.
+3. **Estimand Awareness & Scientific Restraint:** Discovering that the sign of the effect inverts (from $-0.00058$ to $+0.00090$) between the pooled domain and the empirical overlap region prevented false scientific conclusions. The observed direction of the estimated effect can depend critically on the chosen evaluation domain, underscoring the need to distinguish measurement sensitivity from biological interpretation.
 4. **Research Philosophy:** The objective of this work was not to maximize model complexity, but to develop reliable criteria for interpreting learned representations. If extending this project, the primary priority is establishing formal subject-level uncertainty quantification (via hierarchical Bayesian modeling or nested subject-level resampling), rather than scaling architectural complexity.
