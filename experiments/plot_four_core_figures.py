@@ -188,13 +188,17 @@ def make_figure_3():
     bars = ax1.bar(x, df['Delta_task'], color=colors, width=0.55, edgecolor='#263238', lw=1.2)
     ax1.axhline(0, color='black', lw=1.2, ls='--')
     
-    mean_delta = df['Delta_task'].mean()
-    sd_delta = df['Delta_task'].std()
-    ci_lower = mean_delta - 1.96 * (sd_delta / np.sqrt(len(df)))
-    ci_upper = mean_delta + 1.96 * (sd_delta / np.sqrt(len(df)))
+    from scipy import stats
+    mean_delta = float(df['Delta_task'].mean())
+    sd_delta = float(df['Delta_task'].std(ddof=1))
+    se_delta = sd_delta / np.sqrt(len(df))
+    df_freedom = len(df) - 1
+    t_crit = float(stats.t.ppf(0.975, df=df_freedom))
+    ci_lower = mean_delta - t_crit * se_delta
+    ci_upper = mean_delta + t_crit * se_delta
     
     ax1.axhline(mean_delta, color='#00897B', lw=2, ls='-', label=f'Marginal Mean $\\bar{{\\Delta}} = {mean_delta:.5f}$')
-    ax1.axhspan(ci_lower, ci_upper, color='#80CBC4', alpha=0.3, label='95% Confidence Interval')
+    ax1.axhspan(ci_lower, ci_upper, color='#80CBC4', alpha=0.3, label=f'95% Student\'s t CI [{ci_lower:.5f}, {ci_upper:.5f}]')
     
     ax1.set_xticks(x)
     ax1.set_xticklabels([f"Seed {s}" for s in df['Seed']], rotation=30, ha='right')
@@ -227,7 +231,7 @@ def make_figure_3():
     
     summary_text = (
         f"Mean: {mean_delta:.5f}\n"
-        f"95% CI: [{ci_lower:.5f}, {ci_upper:.5f}]\n"
+        f"Student's t 95% CI:\n[{ci_lower:.5f}, {ci_upper:.5f}]\n"
         "Positives: 1/10 (Seed 42)\n"
         r"$p_{\mathrm{marginal}} = 0.9513$"
     )

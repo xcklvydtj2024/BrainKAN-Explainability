@@ -32,7 +32,8 @@
             "marginal_t_real": 0.17939,
             "marginal_t_null": 0.17998,
             "marginal_delta": -0.00058,
-            "ci_95": [-0.00120, 0.00003],
+            "ci_95_student_t": [-0.00130, 0.00013],
+            "t_statistic": -1.8495,
             "positives": "1/10 (Seed 42)",
             "p_value_one_sided": 0.9513,
             "note": "Under predefined one-sided alternative, observed marginal effect does not support rejection of null hypothesis."

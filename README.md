@@ -52,8 +52,8 @@ Multiple Seeds (S ≥ 10)  ──>  Common Support Bounding  ──>  Paired Per
 ### Q2. Are single-seed conclusions reliable?
 **Answer: No.** Seed marginalization changes the conclusion.
 * Under a single default initialization (`seed=42`, $N=500$ permutations), the model exhibited statistically significant excess nonlinearity ($\Delta = +0.0017$, $p = 0.0060$).
-* However, across 10 independent initialization seeds (Exp 5), **9 out of 10 seeds produced negative differences** ($\bar{\Delta} = -0.00058$, 95% CI $[-0.00120, +0.00003]$, $p = 0.9513$).
-* *Takeaway*: Single-seed conditional inference does not generalize across optimization randomness.
+* However, across 10 independent initialization seeds (Exp 5), **9 out of 10 seeds produced negative differences** ($\bar{\Delta} = -0.00058$, Student's $t$ 95% CI $[-0.00130, +0.00013]$, $p = 0.9513$).
+* *Takeaway*: Single-seed conditional inference does not generalize across optimization randomness. The failure to reject the null under marginalization shows that excess nonlinearity is sensitive to initialization rather than an optimization-invariant mechanism.
 
 ### Q3. Does task-associated excess nonlinearity survive rigorous controls?
 **Answer: Not under the proposed seed-marginalized estimator.**
@@ -154,12 +154,16 @@ python experiments/run_exp5_parallel.py
 
 **Example Terminal Output:**
 ```text
-=== Final Seed Stability Inference ===
+=== Final Seed Stability Inference (Student's t Formulation) ===
+Sample Size (Seeds): 10
 Mean Delta: -0.00058
 SD Delta:   0.00100
-95% CI:     [-0.00120, 0.00003]
+SE Delta:   0.00032
+Student's t Critical (df=9, 95%): 2.262
+95% Confidence Interval (Student's t): [-0.00130, +0.00013]
+t-statistic: -1.8495
+p-value (H1: Delta > 0, one-sided): 0.9513
 Sign Consistency: 1/10 positive Deltas (Seed 42 only)
-p-value (H1: Delta > 0): 0.9513
 ```
 
 ### 4. Generate Core Figures

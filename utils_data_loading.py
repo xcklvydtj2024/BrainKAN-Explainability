@@ -26,9 +26,17 @@ def load_real_hcp_data():
     base_edge_index = edges_data['edge_index_A']
     
     dataset = []
-    # Group by subject: i-th subject has index 2*i (0bk) and 2*i+1 (2bk)
+    # Strict Invariant: Each subject i must have paired trials at indices 2*i and 2*i+1.
+    # We assert that each subject pair contains exactly one 0-back and one 2-back trial.
     num_subjects = num_samples // 2
     for i in range(num_subjects):
+        y0 = y[2 * i].item()
+        y1 = y[2 * i + 1].item()
+        if {y0, y1} != {0, 1}:
+            raise ValueError(
+                f"Data invariant violated at subject {i}: expected paired classes {{0, 1}}, got {{{y0}, {y1}}}. "
+                "HCP trials must be strictly paired across task conditions."
+            )
         dataset.append((
             Data(x=X[2*i], edge_index=base_edge_index, y=y[2*i]),
             Data(x=X[2*i+1], edge_index=base_edge_index, y=y[2*i+1])
