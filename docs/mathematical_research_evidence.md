@@ -1,9 +1,11 @@
-# Mathematical Research Evidence: Three Methodological Case Studies from BrainKAN
+# Mathematical Research Evidence: Methodological Analysis from an Independent AI Research Project
 
 **Author:** Xin Qi  
 **Project:** BrainKAN Explainability Benchmark  
 **Date:** October 2026  
-**Document Classification:** Candidate Research Evidence Dossier for Graduate Admissions
+**Document Classification:** Candidate Research Evidence Dossier for Graduate Admissions  
+
+**Author Contribution:** Designed the methodological evaluation framework, implemented the end-to-end experimental and statistical auditing pipeline in PyTorch, conducted all permutation and sensitivity analyses, and formulated the inferential boundaries.
 
 ---
 
@@ -37,7 +39,7 @@ This dossier presents three concrete methodological case studies demonstrating r
 │                                          │                                             │
 │                                          ▼                                             │
 │  Inference Boundary                                                                    │
-│  Directional sign inversion (Pooled: -0.00058 vs. Empirical Overlap: +0.00090)         │
+│  Estimand-dependent sign reversal (Pooled: -0.00058 vs. Empirical Overlap: +0.00090)   │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -46,9 +48,9 @@ This dossier presents three concrete methodological case studies demonstrating r
 ## 2. Case 1: Empirical Metric Definition & Reference Domain Sensitivity of DFL
 
 ### 2.1 Mathematical Formulation
-Let $f: \mathbb{R} \to \mathbb{R}$ denote a learned univariate functional transformation evaluated on a discrete probe grid $D = \{x_1, \dots, x_K\} \subset \mathbb{R}$ with $K \ge 3$ distinct points. 
+Let $f: \mathbb{R} \to \mathbb{R}$ denote a learned univariate transformation evaluated on a discrete probe grid $D = \{x_1, \dots, x_K\} \subset \mathbb{R}$ with $K \ge 3$ distinct points. 
 
-To quantify the **empirical deviation of sampled function values from their best affine projection over a finite evaluation grid $D$**, we fit an ordinary least-squares affine model $\hat{y}(x) = a^* x + b^*$:
+To quantify the empirical deviation of sampled function values from their best affine projection over a finite evaluation grid $D$, we fit an ordinary least-squares affine model $\hat{y}(x) = a^* x + b^*$:
 
 $$(a^*, b^*) = \arg\min_{a, b \in \mathbb{R}} \sum_{i=1}^K [f(x_i) - (a x_i + b)]^2$$
 
@@ -59,16 +61,14 @@ $$\boxed{\operatorname{DFL}(f; D) = \frac{\min_{a, b} \sum_{i=1}^K [f(x_i) - (a 
 where $\bar{f}_D = \frac{1}{K} \sum_{i=1}^K f(x_i)$.
 
 ### 2.2 Analytical Nuances & Discrete Limitations
-1. **Directionality:** $\operatorname{DFL}$ measures the fraction of sample variance unexplained by the affine model. $\operatorname{DFL} = 0$ corresponds to perfect collinearity on $D$; $\operatorname{DFL} = 1$ indicates that the linear slope is zero and all variance is non-affine.
-2. **Degeneracy Convention:** The definition requires $\mathrm{SS}_{\mathrm{tot}} > 0$. If $f$ is constant on $D$ ($f(x_i) \equiv c$), $\mathrm{SS}_{\mathrm{tot}} = 0$, yielding an indeterminate $0/0$. In our codebase, constant functions are assigned $\operatorname{DFL}(f; D) = 0$ by operational convention.
-3. **Discrete Grid vs. Continuous Function Space:** $\operatorname{DFL}(f; D) = 0$ guarantees collinearity only at the discrete sample points $\{x_i\}_{i=1}^K$. It does not mathematically guarantee that the continuous spline is affine in the continuum between probe points.
+1. Directionality: $\operatorname{DFL}$ measures the fraction of sample variance unexplained by the affine model. $\operatorname{DFL} = 0$ corresponds to perfect collinearity on $D$; $\operatorname{DFL} = 1$ indicates that the affine hypothesis class explains zero variance on the sampled grid ($R^2 = 0$).
+2. Degeneracy Convention: The definition requires $\mathrm{SS}_{\mathrm{tot}} > 0$. If $f$ is constant on $D$ ($f(x_i) \equiv c$), $\mathrm{SS}_{\mathrm{tot}} = 0$, yielding an indeterminate $0/0$. In our codebase, constant functions are assigned $\operatorname{DFL}(f; D) = 0$ by operational convention.
+3. Discrete Grid Limitation: $\operatorname{DFL}(f; D) = 0$ guarantees collinearity only at the discrete sample points $\{x_i\}_{i=1}^K$. It does not mathematically guarantee that the continuous spline is affine in the continuum between probe points.
 
 ### 2.3 Synthetic Counterexample & Domain Sensitivity
 To audit whether $\operatorname{DFL}$ behaves as an intrinsic invariant of $f$ or depends on the evaluation grid, we evaluated a static ground-truth test function $f(x) = \tanh(x)$ across two reference domains (Exp 2):
-- **Finding:** Evaluating the *exact same static function* on $D_1 = [-2, 2]$ versus $D_2 = [0, 2]$ produced an apparent metric discrepancy:
-  $$\Delta \operatorname{DFL} \approx 0.0816 \pm 0.0084$$
-  This domain-induced shift is **over 40 times larger** than the subtle task-associated differences observed in real fMRI networks ($\Delta \sim 0.0009$).
-- **Methodological Qualification:** $D_1 = [-2, 2]$ and $D_2 = [0, 2]$ differ not only in their center ($0$ vs. $1$), but also in their support length ($4$ vs. $2$). Therefore, this discrepancy cannot be characterized as a pure translational effect; it reflects the joint sensitivity of the metric to domain location and scale.
+- Finding: Evaluating the exact same static function on $D_1 = [-2, 2]$ versus $D_2 = [0, 2]$ produced an apparent metric discrepancy of $\Delta \operatorname{DFL} \approx 0.0816 \pm 0.0084$ (>40 times larger than typical task differences in real fMRI networks).
+- Methodological Qualification: $D_1 = [-2, 2]$ and $D_2 = [0, 2]$ differ not only in their center ($0$ vs. $1$), but also in their support length ($4$ vs. $2$). Therefore, this discrepancy cannot be characterized as a pure translational effect; it reflects the joint sensitivity of the metric to domain location and scale.
 
 ---
 
@@ -77,47 +77,45 @@ To audit whether $\operatorname{DFL}$ behaves as an intrinsic invariant of $f$ o
 ### 3.1 Null Hypothesis Formulation & Within-Subject Exchangeability
 In our task-fMRI connectomics benchmark, each human subject underwent both a 0-Back and a 2-Back working memory block in a paired design ($N = 100$ subjects, 200 graph samples).
 
-- **Null Hypothesis ($H_0$):** Task condition labels $Y \in \{0, 1\}$ are exchangeable within each subject $i$:
+- Null Hypothesis ($H_0$): Task condition labels $Y \in \{0, 1\}$ are exchangeable within each subject $i$:
   $$\mathcal{L}\left((G_{i,0}, G_{i,1}) \mid Y\right) = \mathcal{L}\left((G_{i,0}, G_{i,1}) \mid \pi_i(Y)\right), \quad \forall i \in \{1, \dots, N\}$$
-- **Exchangeability Structure:** The permutation distribution is generated via **subject-level sign flips**:
-  $$\pi_i \in \{(0, 1), (1, 0)\} \quad \text{with equal probability } 0.5$$
-  This preserves individual neuroanatomy, static anatomical parcellation ($48$ ROIs), and topological connectome structure ($240$ functional edges) under the null, breaking strictly the association between learned weights and task supervision.
+- Exchangeability Structure: The permutation distribution is generated via subject-level sign flips: $\pi_i \in \{(0, 1), (1, 0)\}$ with equal probability $0.5$. This preserves individual anatomy ($48$ ROIs) and functional connectome topology ($240$ edges) under the null, breaking strictly the association between learned weights and task supervision.
 
 ### 3.2 Monte Carlo Permutation p-value
 With network-level test statistic $T = \frac{1}{|E|} \sum_{e \in E} \operatorname{DFL}_e$ ($T_{\mathrm{obs}} = 0.17895$ for the real model), evaluating $B = 500$ independent paired permutation null models $\{T_b\}_{b=1}^{500}$ (Exp 1) yields the **Monte Carlo permutation $p$-value**:
 
 $$\boxed{p = \frac{1 + \#\{T_b \ge T_{\mathrm{obs}}\}}{B + 1} = \frac{1 + 2}{500 + 1} = \frac{3}{501} \approx 0.00599}$$
 
-- **Monte Carlo Precision:** The 500 null values yielded sample mean $\bar{T}_{\mathrm{null}} = 0.17733$ and sample standard deviation $\sigma_{\mathrm{null}} = 0.000585$, establishing a Monte Carlo standard error of $\mathrm{SE}_{\mathrm{MC}} = \frac{0.000585}{\sqrt{500}} \approx 0.000026$.
+- Monte Carlo Precision: The 500 null values yielded sample mean $\bar{T}_{\mathrm{null}} = 0.17733$ and sample standard deviation $\sigma_{\mathrm{null}} = 0.000585$, establishing a Monte Carlo standard error of $\mathrm{SE}_{\mathrm{MC}} = \frac{0.000585}{\sqrt{500}} \approx 0.000026$.
 
 ### 3.3 Inferential Boundaries
-Rather than stopping at reporting "statistical significance," we explicitly articulate the inferential boundaries:
-1. **Conditional Scope:** The $p$-value tests label exchangeability under the specific architecture, optimization regime, and fixed benchmark cohort $\mathcal{D}$.
-2. **Non-Equivalence to Biological Mechanism:** Rejecting $H_0$ indicates that the network weights encode task-associated variation. However, due to neural network overparameterization and parameter non-identifiability, **this statistical rejection does not prove that individual learned edge splines correspond to in-vivo biological mechanisms**.
-3. **Sample Independence:** This single-seed test on a fixed cohort does not replace external validation across independent clinical cohorts.
+Rather than stopping at reporting statistical significance, we explicitly articulate the inferential boundaries:
+1. The $p$-value tests label exchangeability under the specific architecture, optimization regime, and fixed benchmark cohort $\mathcal{D}$.
+2. Rejecting $H_0$ indicates that the network weights encode task-associated variation. However, due to neural network overparameterization and parameter non-identifiability, this statistical rejection does not prove that individual learned edge splines correspond to in-vivo biological mechanisms.
+3. This single-seed test on a fixed cohort does not replace external validation across independent clinical cohorts.
 
 ---
 
-## 4. Case 3: Sensitivity Analysis & Directional Sign Inversion under Common Support
+## 4. Case 3: Sensitivity Analysis & Estimand-Dependent Sign Reversal
 
-### 4.1 The Critical Phenomenon: Directional Inversion of Findings
-The most compelling methodological finding is that the scientific conclusion **inverts in sign** depending on whether the evaluation domain accounts for empirical support overlap.
+### 4.1 The Critical Phenomenon: Domain-Dependent Directional Change
+The most compelling methodological finding is an estimand-dependent directional change: the observed excess curvature inverts in sign depending on whether the evaluation domain accounts for empirical support overlap.
 
 In Exp 5, across $S = 10$ independent random optimization seeds ($w_0 \sim \mathcal{S}$), we evaluated the paired excess curvature $\Delta_s = T(Y; s) - \frac{1}{15} \sum_{b=1}^{15} T(\pi_b(Y); s)$:
 
 | Evaluation Estimand | Mathematical Domain Definition | Mean Difference ($\bar{\Delta}$) | Seed Consistency | Student's $t$ ($df=9$) | One-Sided $p$-value |
 | :--- | :--- | :---: | :---: | :---: | :---: |
-| **Pooled Domain ($\mathcal{S}_{\mathrm{pooled}}$)** | $\text{Quantile}_{1\%-99\%}([X_0, X_1])$ | **$-0.000583$** ($\pm 0.00100$) | **1 / 10 Positive** (Seed 42 only) | $t = -1.849$ | $p = 0.9513$ |
-| **Empirical Common Support ($\mathcal{S}_{\mathrm{common}}$)** | $[q_1^{(0)}, q_{99}^{(0)}] \cap [q_1^{(1)}, q_{99}^{(1)}]$ | **$+0.000896$** ($\pm 0.00055$) | **9 / 10 Positive** | $t = +5.186$ | $p = 0.0003$ |
+| **Pooled Domain ($\mathcal{S}_{\mathrm{pooled}}$)** | $\text{Quantile}_{1\%-99\%}([X_0, X_1])$ | **$-0.000583$** ($\pm 0.00100$) | 1 / 10 Positive (Seed 42) | $t = -1.849$ | $p = 0.9513$ |
+| **Empirical Common Support ($\mathcal{S}_{\mathrm{common}}$)** | $[q_1^{(0)}, q_{99}^{(0)}] \cap [q_1^{(1)}, q_{99}^{(1)}]$ | **$+0.000896$** ($\pm 0.00055$) | 9 / 10 Positive | $t = +5.186$ | $p = 0.0003$ |
 
 ### 4.2 Methodological Diagnosis
-1. **Extrapolation on the Pooled Grid:** On real HCP fMRI data, the Jaccard overlap between 0-Back and 2-Back empirical distributions averages $38.52\% \pm 5.08\%$ (covering $43.47\%$ of the pooled span). On $\mathcal{S}_{\mathrm{pooled}}$, splines are evaluated outside their empirical training range; boundary polynomial oscillation dominates subtle task signals, producing negative expectations for 9 out of 10 initializations.
-2. **Isolation of the Empirical Overlap Region:** Restricting evaluation to the empirical overlap region $[q_1^{(0)}, q_{99}^{(0)}] \cap [q_1^{(1)}, q_{99}^{(1)}]$ filters out boundary extrapolation noise. Under this invariant domain, 9 out of 10 seeds consistently exhibit positive excess curvature.
+1. Extrapolation on the Pooled Grid: Across 48 ROIs on HCP fMRI data, the Jaccard overlap between 0-Back and 2-Back empirical distributions averages $38.52\% \pm 5.08\%$ (covering $43.47\%$ of the pooled span). On $\mathcal{S}_{\mathrm{pooled}}$, splines are evaluated outside their empirical training range; boundary polynomial oscillation dominates subtle task signals, producing negative expectations for 9 out of 10 initializations.
+2. Isolation of the Empirical Overlap Region: Restricting evaluation to the empirical overlap region $[q_1^{(0)}, q_{99}^{(0)}] \cap [q_1^{(1)}, q_{99}^{(1)}]$ filters out boundary extrapolation noise. Under this invariant domain, 9 out of 10 seeds consistently exhibit positive excess curvature.
 
 ### 4.3 Research Boundary Demarcation
-- **Optimization Stochasticity vs. Population Generalization:** The paired $t$-statistic ($t = 5.186, p = 0.0003$) evaluates **initialization consistency conditional on the fixed cohort sample and fixed 15 permutation vectors**. It does not establish generalizability across biological subject populations ($\mathcal{D} \sim \mathcal{P}$).
-- **Shared Permutation Vectors:** The 10 seeds shared the same 15 permutation flip vectors, leaving common baseline error unmodeled across seeds ($\mathrm{SE}_{\mathrm{MC}} \approx 0.00015$ by illustrative order-of-magnitude proxy).
-- **Label-Dependent Domain Selection:** The empirical overlap region was constructed using empirical condition distributions. While holding this grid fixed provides measurement comparability across real and null models, formal finite-sample type I error rate control under label-dependent domain selection remains an open statistical problem.
+- Optimization Stochasticity vs. Population Generalization: The paired $t$-statistic ($t = 5.186, p = 0.0003$) evaluates initialization consistency conditional on the fixed cohort sample and fixed 15 permutation vectors. It does not establish generalizability across biological subject populations ($\mathcal{D} \sim \mathcal{P}$).
+- Shared Permutation Vectors: The 10 seeds shared the same 15 permutation flip vectors, leaving common baseline error unmodeled across seeds ($\mathrm{SE}_{\mathrm{MC}} \approx 0.00015$ by illustrative order-of-magnitude proxy).
+- Label-Dependent Domain Selection: The empirical overlap region was constructed using empirical condition distributions. While holding this grid fixed provides measurement comparability across real and null models, formal finite-sample type I error rate control under label-dependent domain selection remains an open statistical problem.
 
 ---
 
@@ -127,5 +125,5 @@ This benchmark illustrates core methodological competencies essential for advanc
 
 1. **Metric Scrutiny over Black-Box Metrics:** Rather than treating $\operatorname{DFL} = 1 - R^2$ as an intrinsic measure of biological curvature, we formalized it as an empirical projection residual against an affine hypothesis class and demonstrated its joint location-scale sensitivity via synthetic counterexamples.
 2. **Principled Statistical Inference:** Rather than celebrating an empirical $p \approx 0.006$ as "proof of neural mechanisms," we explicitly articulated the conditioning on label exchangeability, model capacity, and dataset-specific baselines.
-3. **Estimand Awareness & Scientific Restraint:** Discovering that the sign of the effect flips (from $-0.00058$ to $+0.00090$) between the pooled domain and the empirical overlap region prevented false scientific conclusions, demonstrating that what appears to be a biological effect can be entirely dictated by the choice of integration domain.
-4. **Future Methodological Directions:** If extending this work, the primary priority is establishing formal subject-level uncertainty quantification (via hierarchical Bayesian modeling or nested subject-level resampling), rather than scaling architectural complexity.
+3. **Estimand Awareness & Scientific Restraint:** Discovering that the sign of the effect inverts (from $-0.00058$ to $+0.00090$) between the pooled domain and the empirical overlap region prevented false scientific conclusions, demonstrating that what appears to be a biological effect can be entirely dictated by the choice of integration domain.
+4. **Research Philosophy:** The objective of this work was not to maximize model complexity, but to develop reliable criteria for interpreting learned representations. If extending this project, the primary priority is establishing formal subject-level uncertainty quantification (via hierarchical Bayesian modeling or nested subject-level resampling), rather than scaling architectural complexity.
