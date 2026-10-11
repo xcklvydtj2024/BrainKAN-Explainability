@@ -58,18 +58,23 @@ def train_model(train_loader, test_loader, base_edge_index, num_nodes, t_range, 
             pred = out.argmax(dim=1)
             correct += (pred == batch.y).sum().item()
             total += batch.y.size(0)
-    acc = correct / total if total > 0 else 0
+    acc = correct / total if total > 0 else 0.0
     return model, acc
 
 def main():
-    print("=== Stage 4.1: Model Capacity Robustness ===")
+    print("=== Stage 4.2: Network Capacity Robustness ===")
     dataset_pairs, base_edge_index, num_nodes = load_real_hcp_data()
     kf = KFold(n_splits=N_SPLITS, shuffle=True, random_state=SEED)
+    
+    global_flip_vectors = []
+    for b in range(N_PERMUTATIONS):
+        np.random.seed(SEED + 2026 + b)
+        global_flip_vectors.append(np.random.randint(0, 2, size=len(dataset_pairs)))
     
     results = []
     
     for dim in DIMS:
-        print(f"\nEvaluating Hidden Dimension = {dim}")
+        print(f"\nEvaluating Hidden Dimension: {dim}")
         real_T = []
         real_accs = []
         null_T = {b: [] for b in range(N_PERMUTATIONS)}
@@ -78,14 +83,25 @@ def main():
             train_pairs = [dataset_pairs[i] for i in train_idx]
             test_pairs = [dataset_pairs[i] for i in test_idx]
             
-            train_x_vals = []
+            node_x_vals = {n: [] for n in range(num_nodes)}
             for pair in train_pairs:
-                train_x_vals.extend(pair[0].x[:,0].numpy().tolist())
-                train_x_vals.extend(pair[1].x[:,0].numpy().tolist())
-            
-            r_min, r_max = np.percentile(train_x_vals, 1), np.percentile(train_x_vals, 99)
-            t_range = (r_min, r_max)
-            t_values = torch.linspace(r_min, r_max, N_PROBE)
+                for n in range(num_nodes):
+                    node_x_vals[n].append(pair[0].x[n, 0].item())
+                    node_x_vals[n].append(pair[1].x[n, 0].item())
+                    
+            node_t_values = {}
+            global_min, global_max = 0.0, 0.0
+            for n in range(num_nodes):
+                r_min = float(np.percentile(node_x_vals[n], 1))
+                r_max = float(np.percentile(node_x_vals[n], 99))
+                node_t_values[n] = torch.linspace(r_min, r_max, N_PROBE)
+                if n == 0:
+                    global_min, global_max = r_min, r_max
+                else:
+                    global_min = min(global_min, r_min)
+                    global_max = max(global_max, r_max)
+                    
+            t_range = (global_min, global_max)
             
             train_data_real = [d for p in train_pairs for d in p]
             test_data_real = [d for p in test_pairs for d in p]
@@ -93,17 +109,16 @@ def main():
             test_loader_real = DataLoader(test_data_real, batch_size=32, shuffle=False)
             
             model_real, acc_real = train_model(train_loader_real, test_loader_real, base_edge_index, num_nodes, t_range, dim, SEED+fold_i)
-            dfl_real, _ = extract_fold_dfl(model_real, t_values)
+            dfl_real, _ = extract_fold_dfl(model_real, node_t_values, base_edge_index)
             real_T.append(np.mean(dfl_real))
             real_accs.append(acc_real)
             
             for b in range(N_PERMUTATIONS):
-                np.random.seed(SEED + fold_i + b * 100)
-                permuted_list = permute_labels(train_pairs)
+                permuted_list = permute_labels(train_pairs, train_idx, global_flip_vectors[b])
                 train_loader_null = DataLoader(permuted_list, batch_size=32, shuffle=True)
                 
                 model_null, _ = train_model(train_loader_null, test_loader_real, base_edge_index, num_nodes, t_range, dim, SEED+fold_i)
-                dfl_null, _ = extract_fold_dfl(model_null, t_values)
+                dfl_null, _ = extract_fold_dfl(model_null, node_t_values, base_edge_index)
                 null_T[b].append(np.mean(dfl_null))
                 
         T_real_global = np.mean(real_T)

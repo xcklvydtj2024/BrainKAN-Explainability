@@ -23,7 +23,7 @@ os.makedirs(ARTIFACTS, exist_ok=True)
 SEED = 42
 N_SPLITS = 5
 N_PROBE = 100
-N_PERMUTATIONS = 10 # Increase to 10 for better accuracy in this exp
+N_PERMUTATIONS = 10 # 10 permutations per fold for domain control evaluation
 
 def main():
     print("=== Experiment 3: Reference Domain Control ===")
@@ -32,14 +32,28 @@ def main():
     
     kf = KFold(n_splits=N_SPLITS, shuffle=True, random_state=SEED)
     
-    # Pre-calculate CHCP reference domain globally
-    chcp_x_vals = []
+    # Pre-calculate CHCP per-node reference domain
+    node_x_chcp = {n: [] for n in range(num_nodes)}
     for pair in chcp_pairs:
-        chcp_x_vals.extend(pair[0].x[:,0].numpy().tolist())
-        chcp_x_vals.extend(pair[1].x[:,0].numpy().tolist())
-    r_min_chcp, r_max_chcp = np.percentile(chcp_x_vals, 1), np.percentile(chcp_x_vals, 99)
-    t_values_chcp = torch.linspace(r_min_chcp, r_max_chcp, N_PROBE)
-    print(f"CHCP Native Domain (R_CHCP): [{r_min_chcp:.2f}, {r_max_chcp:.2f}]")
+        for n in range(num_nodes):
+            node_x_chcp[n].append(pair[0].x[n, 0].item())
+            node_x_chcp[n].append(pair[1].x[n, 0].item())
+            
+    node_t_values_chcp = {}
+    r_min_chcp = {}
+    r_max_chcp = {}
+    for n in range(num_nodes):
+        r_min_chcp[n] = float(np.percentile(node_x_chcp[n], 1))
+        r_max_chcp[n] = float(np.percentile(node_x_chcp[n], 99))
+        node_t_values_chcp[n] = torch.linspace(r_min_chcp[n], r_max_chcp[n], N_PROBE)
+        
+    print(f"CHCP Native Domain extracted for {num_nodes} nodes (Mean [1%, 99%]: [{np.mean(list(r_min_chcp.values())):.2f}, {np.mean(list(r_max_chcp.values())):.2f}])")
+    
+    # Pre-generate global flip vectors for reproducible paired permutations across folds
+    global_flip_vectors = []
+    for b in range(N_PERMUTATIONS):
+        np.random.seed(SEED + 2026 + b)
+        global_flip_vectors.append(np.random.randint(0, 2, size=len(hcp_pairs)))
     
     results = []
     
@@ -47,69 +61,83 @@ def main():
         print(f"\n--- Fold {fold_i+1}/{N_SPLITS} ---")
         train_pairs = [hcp_pairs[i] for i in train_idx]
         
-        train_x_vals = []
+        # Per-node empirical domains for HCP fold
+        node_x_hcp = {n: [] for n in range(num_nodes)}
         for pair in train_pairs:
-            train_x_vals.extend(pair[0].x[:,0].numpy().tolist())
-            train_x_vals.extend(pair[1].x[:,0].numpy().tolist())
+            for n in range(num_nodes):
+                node_x_hcp[n].append(pair[0].x[n, 0].item())
+                node_x_hcp[n].append(pair[1].x[n, 0].item())
         
-        r_min_hcp, r_max_hcp = np.percentile(train_x_vals, 1), np.percentile(train_x_vals, 99)
-        t_range_hcp = (r_min_hcp, r_max_hcp)
-        t_values_hcp = torch.linspace(r_min_hcp, r_max_hcp, N_PROBE)
-        print(f"  HCP Frozen Domain (R_HCP_fold): [{r_min_hcp:.2f}, {r_max_hcp:.2f}]")
+        node_t_values_hcp = {}
+        node_t_values_common = {}
+        global_min_hcp, global_max_hcp = 0.0, 0.0
         
-        # Calculate Common Support Domain
-        r_min_common = max(r_min_hcp, r_min_chcp)
-        r_max_common = min(r_max_hcp, r_max_chcp)
-        t_values_common = torch.linspace(r_min_common, r_max_common, N_PROBE)
-        print(f"  Common Support Domain (R_Common): [{r_min_common:.2f}, {r_max_common:.2f}]")
+        for n in range(num_nodes):
+            r_min_h = float(np.percentile(node_x_hcp[n], 1))
+            r_max_h = float(np.percentile(node_x_hcp[n], 99))
+            node_t_values_hcp[n] = torch.linspace(r_min_h, r_max_h, N_PROBE)
+            
+            # Common Support per node
+            c_min = max(r_min_h, r_min_chcp[n])
+            c_max = min(r_max_h, r_max_chcp[n])
+            if c_min >= c_max:
+                c_min, c_max = r_min_h, r_max_h
+            node_t_values_common[n] = torch.linspace(c_min, c_max, N_PROBE)
+            
+            if n == 0:
+                global_min_hcp, global_max_hcp = r_min_h, r_max_h
+            else:
+                global_min_hcp = min(global_min_hcp, r_min_h)
+                global_max_hcp = max(global_max_hcp, r_max_h)
+        
+        t_range_hcp = (global_min_hcp, global_max_hcp)
+        print(f"  HCP Fold Grid Range: [{global_min_hcp:.2f}, {global_max_hcp:.2f}]")
         
         train_data_real = [d for p in train_pairs for d in p]
         train_loader_real = DataLoader(train_data_real, batch_size=32, shuffle=True)
         
-        # Train on HCP!
-        model_real = train_model(train_loader_real, base_edge_index, num_nodes, t_range_hcp, SEED+fold_i)
+        # Train on HCP
+        model_real = train_model(train_loader_real, base_edge_index, num_nodes, t_range_hcp, SEED + fold_i)
         
-        dfl_real_hcp, _ = extract_fold_dfl(model_real, t_values_hcp)
-        dfl_real_chcp, _ = extract_fold_dfl(model_real, t_values_chcp)
-        dfl_real_common, _ = extract_fold_dfl(model_real, t_values_common)
+        dfl_real_hcp, _ = extract_fold_dfl(model_real, node_t_values_hcp, base_edge_index)
+        dfl_real_chcp, _ = extract_fold_dfl(model_real, node_t_values_chcp, base_edge_index)
+        dfl_real_common, _ = extract_fold_dfl(model_real, node_t_values_common, base_edge_index)
         
-        real_T_hcp = np.mean(dfl_real_hcp)
-        real_T_chcp = np.mean(dfl_real_chcp)
-        real_T_common = np.mean(dfl_real_common)
+        real_T_hcp = float(np.mean(dfl_real_hcp))
+        real_T_chcp = float(np.mean(dfl_real_chcp))
+        real_T_common = float(np.mean(dfl_real_common))
         
         null_T_hcp_list = []
         null_T_chcp_list = []
         null_T_common_list = []
         
         for b in range(N_PERMUTATIONS):
-            np.random.seed(SEED + fold_i + b * 100)
-            permuted_list = permute_labels(train_pairs)
+            permuted_list = permute_labels(train_pairs, train_idx, global_flip_vectors[b])
             train_loader_null = DataLoader(permuted_list, batch_size=32, shuffle=True)
             
-            # Null model also trained on HCP!
-            model_null = train_model(train_loader_null, base_edge_index, num_nodes, t_range_hcp, SEED+fold_i)
+            model_null = train_model(train_loader_null, base_edge_index, num_nodes, t_range_hcp, SEED + fold_i)
             
-            dfl_null_hcp, _ = extract_fold_dfl(model_null, t_values_hcp)
-            dfl_null_chcp, _ = extract_fold_dfl(model_null, t_values_chcp)
-            dfl_null_common, _ = extract_fold_dfl(model_null, t_values_common)
+            dfl_null_hcp, _ = extract_fold_dfl(model_null, node_t_values_hcp, base_edge_index)
+            dfl_null_chcp, _ = extract_fold_dfl(model_null, node_t_values_chcp, base_edge_index)
+            dfl_null_common, _ = extract_fold_dfl(model_null, node_t_values_common, base_edge_index)
             
-            null_T_hcp_list.append(np.mean(dfl_null_hcp))
-            null_T_chcp_list.append(np.mean(dfl_null_chcp))
-            null_T_common_list.append(np.mean(dfl_null_common))
+            null_T_hcp_list.append(float(np.mean(dfl_null_hcp)))
+            null_T_chcp_list.append(float(np.mean(dfl_null_chcp)))
+            null_T_common_list.append(float(np.mean(dfl_null_common)))
             
         results.append({
             'Fold': fold_i + 1,
             'Real_T_HCP': real_T_hcp,
-            'Null_T_HCP_Mean': np.mean(null_T_hcp_list),
-            'Delta_HCP': real_T_hcp - np.mean(null_T_hcp_list),
+            'Null_T_HCP_Mean': float(np.mean(null_T_hcp_list)),
+            'Delta_HCP': real_T_hcp - float(np.mean(null_T_hcp_list)),
             
             'Real_T_CHCP': real_T_chcp,
-            'Null_T_CHCP_Mean': np.mean(null_T_chcp_list),
-            'Delta_CHCP': real_T_chcp - np.mean(null_T_chcp_list),
+            'Null_T_CHCP_Mean': float(np.mean(null_T_chcp_list)),
+            'Delta_CHCP': real_T_chcp - float(np.mean(null_T_chcp_list)),
             
             'Real_T_Common': real_T_common,
-            'Null_T_Common_Mean': np.mean(null_T_common_list),
-            'Delta_Common': real_T_common - np.mean(null_T_common_list)
+            'Null_T_Common_Mean': float(np.mean(null_T_common_list)),
+            'Delta_Common': real_T_common - float(np.mean(null_T_common_list))
         })
         
         print(f"  HCP Eval    -> Real: {real_T_hcp:.4f} | Null: {np.mean(null_T_hcp_list):.4f} | Delta: {results[-1]['Delta_HCP']:+.4f}")

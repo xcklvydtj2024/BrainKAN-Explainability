@@ -12,47 +12,96 @@
 
 This document details the theoretical formulation of spline geometric metrics (Deviation-From-Linearity, DFL) and establishes the distinction between conditional and marginal estimands in KAN interpretability.
 
-\section*{Proposition 1: Reference-Induced Deformation Decomposition}
+\section*{1. Deviation-From-Linearity (DFL) \& Invariance Properties}
 
-Let the empirical computation along an edge $(i, j)$ in a Kolmogorov--Arnold Network be parameterized by learnable B-splines:
+Let the empirical computation along an edge $(i, j)$ in a Kolmogorov--Arnold Network (KAN) be parameterized by learnable B-splines:
 \begin{equation}
-\Phi_{ij}(x) = W_{ij}^{base}\operatorname{SiLU}(x) + \sum_{k=1}^K w_{ij,k} B_k(x)
+\Phi_{ij}(x) = W_{ij}^{\mathrm{base}}\operatorname{SiLU}(x) + \sum_{k=1}^K w_{ij,k} B_k(x)
 \end{equation}
 
-When evaluating the non-linearity of this function over a specified evaluation domain $X \subset \mathbb{R}$, we compute the Deviation-From-Linearity (DFL):
+When evaluating the non-linearity of $\Phi_{ij}$ over a discrete evaluation grid $X = \{t_1, \dots, t_M\} \subset \mathbb{R}$, we compute the Deviation-From-Linearity (DFL):
 \begin{equation}
-\operatorname{DFL}(\Phi_{ij}, X) = 1 - R^2 = \frac{\sum_{t \in X} (\Phi_{ij}(t) - \hat{y}(t))^2}{\sum_{t \in X} (\Phi_{ij}(t) - \bar{y})^2}
+\operatorname{DFL}(\Phi_{ij}, X) \equiv \frac{\mathrm{SS}_{\mathrm{res}}}{\mathrm{SS}_{\mathrm{tot}}} = 1 - R^2 = \frac{\sum_{m=1}^M (\Phi_{ij}(t_m) - \hat{y}(t_m))^2}{\sum_{m=1}^M (\Phi_{ij}(t_m) - \bar{y})^2}
+\end{equation}
+where $\hat{y}(t) = \hat{\beta}_1 t + \hat{\beta}_0$ is the ordinary least squares (OLS) linear projection of $\Phi_{ij}(t)$ on $t$, and $\bar{y} = \frac{1}{M}\sum_{m=1}^M \Phi_{ij}(t_m)$.
+
+\subsection*{Affine Scale Invariance Lemma}
+For any non-zero scalar $a \neq 0$ and constant $b \in \mathbb{R}$, let $\tilde{\Phi}(t) = a \Phi(t) + b$. Because OLS linear regression is scale-equivariant ($\hat{\beta}_1(\tilde{\Phi}) = a \hat{\beta}_1(\Phi)$ and $\hat{\beta}_0(\tilde{\Phi}) = a \hat{\beta}_0(\Phi) + b$), the residuals and total sum of squares scale identically by $a^2$:
+\begin{equation}
+\mathrm{SS}_{\mathrm{res}}(\tilde{\Phi}) = a^2 \mathrm{SS}_{\mathrm{res}}(\Phi), \qquad \mathrm{SS}_{\mathrm{tot}}(\tilde{\Phi}) = a^2 \mathrm{SS}_{\mathrm{tot}}(\Phi)
+\end{equation}
+Consequently, the variance ratio is strictly invariant:
+\begin{equation}
+\operatorname{DFL}(a \Phi + b, X) = \operatorname{DFL}(\Phi, X)
+\end{equation}
+\textit{Remark:} This affine invariance is a fundamental property of the coefficient of determination ($R^2$), ensuring that global linear gains and DC offsets do not register as non-linear curvature.
+
+\section*{2. Anchored Operational Decomposition of Domain Sensitivity}
+
+Because $\operatorname{DFL}$ depends on the integration interval, evaluating a function over different domains alters the measured metric.
+
+\subsection*{Identifiability Through Anchor Gauge Fixing}
+Without an explicit anchor, an unconstrained additive decomposition $G(f, X) = S(f) + D(X, f)$ is unidentifiable: for any arbitrary functional $h(f)$, one could set $S' = S + h$ and $D' = D - h$ without changing the sum.
+
+To render the decomposition operationally well-defined and identifiable, we fix a \textbf{canonical reference anchor} $\mathcal{S}_0 \subset \mathbb{R}$ (e.g., standard uniform interval $[-1, 1]$ or common support $\mathcal{S}_{\mathrm{common}}$):
+\begin{enumerate}
+    \item \textbf{Anchored Profile:}
+    \begin{equation}
+    S_{\mathcal{S}_0}(f) \equiv \operatorname{DFL}(f, \mathcal{S}_0)
+    \end{equation}
+    \item \textbf{Domain-Shift Discrepancy:}
+    \begin{equation}
+    D(X; \mathcal{S}_0, f) \equiv \operatorname{DFL}(f, X) - \operatorname{DFL}(f, \mathcal{S}_0)
+    \end{equation}
+\end{enumerate}
+Under this anchored gauge, the decomposition is uniquely defined:
+\begin{equation}
+\operatorname{DFL}(f, X) = S_{\mathcal{S}_0}(f) + D(X; \mathcal{S}_0, f)
 \end{equation}
 
-\textbf{The Geometric Decomposition:}\\
-The measured geometric curvature over support $X$ decomposes into two components:
+\subsection*{Operational Diagnostic Value}
+This formulation provides an operational diagnostic:
+\begin{itemize}
+    \item If a model is evaluated across two conditions using their empirical data distributions $X_A$ and $X_B$, the apparent metric difference is:
+    \begin{equation}
+    \Delta_{\mathrm{apparent}} = [S_{\mathcal{S}_0}(f_A) - S_{\mathcal{S}_0}(f_B)] + [D(X_A; \mathcal{S}_0, f_A) - D(X_B; \mathcal{S}_0, f_B)]
+    \end{equation}
+    \item When $f_A = f_B$ (zero true functional change), any domain shift $X_A \neq X_B$ produces an artifactual effect $\Delta_{\mathrm{apparent}} = D(X_A; \mathcal{S}_0, f) - D(X_B; \mathcal{S}_0, f)$.
+    \item As empirically measured in Exp 2-B (\texttt{synthetic\_summary.csv}), shifting the domain alone inflates measured $\Delta_{\mathrm{DFL}}$ by \textbf{$+0.0816 \pm 0.0084$} ($t = 136.6$), which is $>40\times$ larger than the entire real task effect.
+\end{itemize}
+
+\section*{3. Optimization Stochasticity and Estimand Duality}
+
+Deep neural networks navigate non-convex loss landscapes. The learned parameters $w_{ij,k}(s)$ are stochastic realizations dependent on the random seed $s \sim \mathcal{S}$ (initialization and mini-batch sequence).
+
+\subsection*{1. Conditional Estimand (Fixed Seed $s$)}
+For a fixed seed $s$, the conditional excess curvature is:
 \begin{equation}
-G(f, X) = S(f) + D(X, f)
+\Delta(s) = T_{\mathrm{real}}(s) - \bar{T}_{\mathrm{null}}(s)
 \end{equation}
-where $S(f)$ is the intrinsic mathematical transformation, and $D(X, f)$ is the domain-dependent deformation induced by evaluating over support $X$. As proven in Exp 2-B, a domain shift alone can inflate $D(X, f)$ by $+0.1195$ without altering the underlying function.
+Testing $H_0^{(s)}: \Delta(s) \le 0$ evaluates whether real labels induced greater curvature \textit{within the specific optimization basin reached by seed $s$}. For Seed 42, $\Delta(42) = +0.00172$, achieving conditional significance ($p = 0.0060$ under 500 permutations).
 
-\section*{Proposition 2: Optimization Randomness and Estimand Duality}
-
-Because deep neural networks navigate non-convex loss landscapes, the learned spline parameters $w_{ij,k}(s)$ are stochastic realizations dependent on the random seed $s \sim \mathcal{S}$ (initialization and mini-batch sequence).
-
-\subsection*{1. Conditional Estimand}
-For a fixed seed $s$, the conditional excess nonlinearity is defined as:
+\subsection*{2. Optimization-Marginalized Estimand}
+The scientific hypothesis of interest across optimization randomness is the marginal expectation:
 \begin{equation}
-\Delta(s) = G(f_{\mathrm{real}}^{(s)}, X) - \mathbb{E}_\pi [G(f_{\mathrm{null}(\pi)}^{(s)}, X)]
-\end{equation}
-Testing $H_0^{(s)}: \Delta(s) \le 0$ evaluates whether real labels induced greater curvature \textit{within the specific optimization basin reached by seed $s$}. For seed $s=42$, $\Delta(42) = +0.0017$ ($p = 0.0060$).
-
-\subsection*{2. Marginal Population Estimand}
-The scientific hypothesis of interest across the optimization distribution is the marginal expectation:
-\begin{equation}
-\Delta_{\mathrm{marginal}} = \mathbb{E}_{s \sim \mathcal{S}} [\Delta(s)] = \mathbb{E}_s [G(f_{\mathrm{real}}^{(s)}, X)] - \mathbb{E}_{s, \pi} [G(f_{\mathrm{null}}^{(s)}, X)]
+\bar{\Delta} = \mathbb{E}_{s \sim \mathcal{S}} [\Delta(s)] = \mathbb{E}_s [T_{\mathrm{real}}(s)] - \mathbb{E}_{s} [\bar{T}_{\mathrm{null}}(s)]
 \end{equation}
 
-\textbf{Empirical Benchmark Finding:}\\
-Evaluating over 10 independent initialization seeds reveals:
-\begin{equation}
-\Delta_{\mathrm{marginal}} = -0.00058 \le 0 \quad (\text{95\% CI: } [-0.00120, +0.00003], \quad p = 0.9513)
-\end{equation}
-\textbf{Conclusion:} Under the predefined one-sided alternative, the observed marginal effect does not support rejection of the null hypothesis. Single-seed conditional inference does not generalize across optimization randomness.
+\subsection*{Empirical Benchmark Findings (Exp 5)}
+Evaluating across 10 independent initialization seeds under a fixed data split:
+\begin{itemize}
+    \item \textbf{Mean effect:} $\bar{\Delta} = -0.00058$
+    \item \textbf{Standard deviation:} $\mathrm{SD} = 0.00100$, $\mathrm{SE} = 0.00032$
+    \item \textbf{Student's $t$-test ($df=9$):} $t = -1.82$, one-sided $p = 0.9513$ (95\% CI: $[-0.00130, +0.00013]$)
+    \item \textbf{Sign consistency:} Only 1 of 10 seeds (Seed 42) exhibited $\Delta > 0$.
+\end{itemize}
+
+\subsection*{Inferential Qualifications}
+\begin{enumerate}
+    \item \textbf{Sampling Scope:} The 10 seeds evaluate algorithmic optimization variability under a fixed dataset; they do not represent 10 independent biological cohorts.
+    \item \textbf{Finite Permutations \& Shared Vectors:} Each seed's null mean is estimated from $B=15$ permutations sharing identical subject sign-flip vectors.
+    \item \textbf{Student's $t$ Inference:} The confidence interval assumes approximate normality of within-seed effect estimates across initialization basins.
+    \item \textbf{Conclusion:} Under the predefined one-sided alternative, the marginal effect does not support rejection of the null hypothesis. Conditional significance at a single seed fails to generalize across optimization randomness.
+\end{enumerate}
 
 \end{document}

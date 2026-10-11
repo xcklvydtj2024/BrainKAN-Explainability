@@ -47,8 +47,8 @@ def compute_dfl(model, eval_points):
     A = np.vstack([t_np, np.ones(len(t_np))]).T
     w, b = np.linalg.lstsq(A, y_pred, rcond=None)[0]
     y_lin = w * t_np + b
-    ss_res = np.sum((y_pred - y_lin)**2)
-    return max(0.0, 1 - (ss_res / ss_tot))
+    dfl = ss_res / ss_tot
+    return float(np.clip(dfl, 0.0, 1.0))
 
 def f_true(x):
     return 1.0 * x + 0.5 * torch.sin(2 * x)

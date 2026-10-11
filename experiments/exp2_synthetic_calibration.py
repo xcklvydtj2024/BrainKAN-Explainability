@@ -1,16 +1,19 @@
 import os
+import sys
+from pathlib import Path
 import torch
 import torch.nn.functional as F
 import numpy as np
 import pandas as pd
 import time
-import sys
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(PROJECT_ROOT))
+
 from models.kan import _b_spline_basis
 
-ARTIFACTS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results", "exp2_synthetic")
-os.makedirs(ARTIFACTS, exist_ok=True)
+ARTIFACTS = PROJECT_ROOT / "results" / "exp2_synthetic"
+ARTIFACTS.mkdir(parents=True, exist_ok=True)
 
 class SyntheticEdgeKAN(torch.nn.Module):
     def __init__(self, in_features=1, out_features=1, grid_size=5, spline_order=3, grid_range=(-3, 3)):
@@ -34,8 +37,12 @@ class SyntheticEdgeKAN(torch.nn.Module):
         spline_out = torch.einsum('bik,oik->bo', basis, self.spline_weight)
         return base_out + spline_out
 
-def compute_dfl(model, eval_range, num_points=100):
-    t_values = torch.linspace(eval_range[0], eval_range[1], num_points).unsqueeze(1)
+def compute_dfl(model, eval_points):
+    """
+    Computes Deviation-From-Linearity (DFL = 1 - R^2 = SS_res / SS_tot).
+    Higher values strictly indicate greater nonlinearity.
+    """
+    t_values = eval_points.unsqueeze(1)
     with torch.no_grad():
         y_pred = model(t_values).numpy().flatten()
     
@@ -48,107 +55,124 @@ def compute_dfl(model, eval_range, num_points=100):
     w, b = np.linalg.lstsq(A, y_pred, rcond=None)[0]
     y_lin = w * t_np + b
     ss_res = np.sum((y_pred - y_lin)**2)
-    return max(0.0, 1 - (ss_res / ss_tot))
+    
+    dfl = ss_res / ss_tot
+    return float(np.clip(dfl, 0.0, 1.0))
 
-def f0(x):
-    return 1.0 * x + 0.5 * torch.sin(2 * x)
-
-def f1_change(x):
-    return f0(x) + 0.8 * (x ** 2)
+def f_true(x):
+    return 1.0 * x + 0.5 * torch.sin(2.0 * x)
 
 def train_synthetic_model(X, Y, grid_range):
     model = SyntheticEdgeKAN(grid_range=grid_range)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.05)
     
-    dataset = torch.utils.data.TensorDataset(X, Y)
-    loader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=True)
-    
     model.train()
-    for _ in range(50): # Enough epochs for simple 1D curve fitting
-        for batch_x, batch_y in loader:
-            optimizer.zero_grad()
-            out = model(batch_x)
-            loss = F.mse_loss(out, batch_y)
-            loss.backward()
-            optimizer.step()
+    for _ in range(100):
+        optimizer.zero_grad()
+        out = model(X)
+        loss = F.mse_loss(out, Y)
+        loss.backward()
+        optimizer.step()
     return model
 
 def main():
-    print("=== Experiment 2: Synthetic Data Calibration ===")
+    print("=== Experiment 2: Synthetic Data Calibration (Corrected DFL Metric) ===")
     
-    N_SIMULATIONS = 500
+    N_SIMULATIONS = 200
     N_SAMPLES = 1000
-    NOISE = 0.2
-    
+    NOISE = 0.05
     results = []
     start_time = time.time()
     
     for i in range(N_SIMULATIONS):
-        if (i+1) % 50 == 0:
+        if (i + 1) % 50 == 0:
             print(f"Running simulation {i+1}/{N_SIMULATIONS}...")
             
         torch.manual_seed(42 + i)
         np.random.seed(42 + i)
         
-        # P_train = N(0, 1)
-        X_train = torch.randn(N_SAMPLES, 1)
-        r_min, r_max = -2.5, 2.5 # ~99th percentile of N(0, 1)
-        grid_range = (r_min, r_max)
+        # Two input distributions
+        X_A = torch.randn(N_SAMPLES, 1) # N(0, 1)
+        X_B = torch.randn(N_SAMPLES, 1) * 0.5 + 1.0 # N(1, 0.5)
         
-        # Scenario 1: Function SAME (Real trains on f0, Null trains on f0)
-        Y_null = f0(X_train) + torch.randn(N_SAMPLES, 1) * NOISE
-        Y_real_same = f0(X_train) + torch.randn(N_SAMPLES, 1) * NOISE
+        Y_A = f_true(X_A) + torch.randn(N_SAMPLES, 1) * NOISE
+        Y_B = f_true(X_B) + torch.randn(N_SAMPLES, 1) * NOISE
         
-        model_null_same = train_synthetic_model(X_train, Y_null, grid_range)
-        model_real_same = train_synthetic_model(X_train, Y_real_same, grid_range)
+        grid_range = (-3.5, 3.5)
         
-        # Scenario 2: Function CHANGED (Real trains on f1, Null trains on f0)
-        Y_real_changed = f1_change(X_train) + torch.randn(N_SAMPLES, 1) * NOISE
-        model_real_changed = train_synthetic_model(X_train, Y_real_changed, grid_range)
+        model_A = train_synthetic_model(X_A, Y_A, grid_range)
+        model_B = train_synthetic_model(X_B, Y_B, grid_range)
         
-        # Domains
-        domain_same = (-2.5, 2.5) # Matches P_train
-        domain_shift = (0.0, 3.0) # Matches a shifted P_eval ~ N(1.5, 0.5)
+        # --- Exp2-A: Fixed function, Fixed uniform grid, Different input training distribution ---
+        eval_grid_uniform_common = torch.linspace(-1.0, 2.0, 100)
+        dfl_A_common = compute_dfl(model_A, eval_grid_uniform_common)
+        dfl_B_common = compute_dfl(model_B, eval_grid_uniform_common)
+        results.append({
+            'SubExp': 'Exp2-A', 'Sim': i,
+            'Condition_A': 'Model_A_CommonGrid', 'DFL_A': dfl_A_common,
+            'Condition_B': 'Model_B_CommonGrid', 'DFL_B': dfl_B_common,
+            'Delta': dfl_A_common - dfl_B_common
+        })
         
-        # Evaluate A: Func Same, Dist Same
-        t_real = compute_dfl(model_real_same, domain_same)
-        t_null = compute_dfl(model_null_same, domain_same)
-        results.append({'Scenario': 'A (Func Same, Dist Same)', 'Sim': i, 'T_real': t_real, 'T_null': t_null, 'Delta': t_real - t_null})
+        # --- Exp2-B: Fixed function (model A), Shifted reference intervals ---
+        # Domain 1: [-2.0, 2.0] (symmetric, linear trend dominates)
+        # Domain 2: [0.0, 2.0] (restricted half-cycle, curvature dominates)
+        eval_grid_1 = torch.linspace(-2.0, 2.0, 100)
+        eval_grid_2 = torch.linspace(0.0, 2.0, 100)
+        dfl_A_grid1 = compute_dfl(model_A, eval_grid_1)
+        dfl_A_grid2 = compute_dfl(model_A, eval_grid_2)
+        # Measure domain-induced inflation: DFL(Domain 2) - DFL(Domain 1)
+        results.append({
+            'SubExp': 'Exp2-B', 'Sim': i,
+            'Condition_A': 'Domain_HalfCycle', 'DFL_A': dfl_A_grid2,
+            'Condition_B': 'Domain_FullSymmetric', 'DFL_B': dfl_A_grid1,
+            'Delta': dfl_A_grid2 - dfl_A_grid1
+        })
         
-        # Evaluate B: Func Same, Dist Shift
-        t_real = compute_dfl(model_real_same, domain_shift)
-        t_null = compute_dfl(model_null_same, domain_shift)
-        results.append({'Scenario': 'B (Func Same, Dist Shift)', 'Sim': i, 'T_real': t_real, 'T_null': t_null, 'Delta': t_real - t_null})
-        
-        # Evaluate C: Func Change, Dist Same
-        t_real = compute_dfl(model_real_changed, domain_same)
-        t_null = compute_dfl(model_null_same, domain_same)
-        results.append({'Scenario': 'C (Func Change, Dist Same)', 'Sim': i, 'T_real': t_real, 'T_null': t_null, 'Delta': t_real - t_null})
-        
-        # Evaluate D: Func Change, Dist Shift
-        t_real = compute_dfl(model_real_changed, domain_shift)
-        t_null = compute_dfl(model_null_same, domain_shift)
-        results.append({'Scenario': 'D (Func Change, Dist Shift)', 'Sim': i, 'T_real': t_real, 'T_null': t_null, 'Delta': t_real - t_null})
+        # --- Exp2-C: Fixed function (model A), Fixed interval [-2, 2], Changing Grid Type ---
+        eval_grid_uniform = torch.linspace(-2.0, 2.0, 100)
+        quantiles = torch.linspace(0.01, 0.99, 100)
+        eval_grid_quantile = torch.quantile(X_A.flatten(), quantiles)
+        dfl_A_unif = compute_dfl(model_A, eval_grid_uniform)
+        dfl_A_quant = compute_dfl(model_A, eval_grid_quantile)
+        results.append({
+            'SubExp': 'Exp2-C', 'Sim': i,
+            'Condition_A': 'Quantile_Grid', 'DFL_A': dfl_A_quant,
+            'Condition_B': 'Uniform_Grid', 'DFL_B': dfl_A_unif,
+            'Delta': dfl_A_quant - dfl_A_unif
+        })
 
     df = pd.DataFrame(results)
-    df.to_csv(os.path.join(ARTIFACTS, "synthetic_calibration.csv"), index=False)
+    out_csv = ARTIFACTS / "synthetic_calibration.csv"
+    df.to_csv(out_csv, index=False)
     
-    print("\n=== Synthetic Calibration Summary ===")
-    for scenario in sorted(df['Scenario'].unique()):
-        sub_df = df[df['Scenario'] == scenario]
-        mean_delta = sub_df['Delta'].mean()
-        std_delta = sub_df['Delta'].std()
+    print("\n=== Synthetic Calibration Summary (DFL = SS_res / SS_tot) ===")
+    summary_rows = []
+    for subexp in sorted(df['SubExp'].unique()):
+        sub = df[df['SubExp'] == subexp]
+        mean_dfl_a = float(sub['DFL_A'].mean())
+        mean_dfl_b = float(sub['DFL_B'].mean())
+        mean_delta = float(sub['Delta'].mean())
+        std_delta = float(sub['Delta'].std(ddof=1))
+        se_delta = std_delta / np.sqrt(len(sub))
         
-        # Power / False Positive calculation (is Delta > 0 at p<0.05 level? Here we just count how many times Delta > 0.005)
-        # We define a threshold for "detection"
-        detected = (sub_df['Delta'] > 0.05).mean() * 100
+        print(f"[{subexp}]")
+        print(f"  Mean DFL A: {mean_dfl_a:.4f}")
+        print(f"  Mean DFL B: {mean_dfl_b:.4f}")
+        print(f"  Mean Delta: {mean_delta:+.4f} (± {std_delta:.4f}, SE={se_delta:.4f})")
+        summary_rows.append({
+            'SubExp': subexp,
+            'Mean_DFL_A': mean_dfl_a,
+            'Mean_DFL_B': mean_dfl_b,
+            'Mean_Delta': mean_delta,
+            'Std_Delta': std_delta,
+            'SE_Delta': se_delta
+        })
         
-        print(f"[{scenario}]")
-        print(f"  Mean Delta: {mean_delta:+.4f} (±{std_delta:.4f})")
-        print(f"  Detection Rate (Delta > 0.05): {detected:.1f}%")
-        
-    print(f"\nTotal Time: {time.time() - start_time:.2f}s")
-    print(f"Saved artifacts to {ARTIFACTS}/synthetic_calibration.csv")
+    summary_df = pd.DataFrame(summary_rows)
+    summary_df.to_csv(ARTIFACTS / "synthetic_summary.csv", index=False)
+    print(f"\nCompleted in {time.time() - start_time:.2f}s")
+    print(f"Saved verified synthetic results to {out_csv}")
 
 if __name__ == "__main__":
     main()
