@@ -51,19 +51,20 @@ Spline evaluation metrics like Deviation-From-Linearity ($\mathrm{DFL}$) are non
 \operatorname{DFL}(f, \mathcal{S}) = \frac{\sum_{t \in \mathcal{S}} (f(t) - \hat{y}_{\mathrm{linear}}(t))^2}{\sum_{t \in \mathcal{S}} (f(t) - \bar{y})^2}
 \end{equation}
 
-\textbf{Anchored Operational Decomposition:}\\
-To render domain sensitivity identifiable, we define an \textbf{anchored operational decomposition} relative to a predefined canonical support $\mathcal{S}_0$:
+\textbf{Anchored Operational Accounting:}\\
+To provide a concrete reference standard against which domain sensitivity can be audited, we define an \textbf{anchored operational decomposition} relative to a predefined canonical support $\mathcal{S}_0$:
 \begin{equation}
 G(f, \mathcal{S}) = G(f, \mathcal{S}_0) + \mathcal{D}(\mathcal{S}; \mathcal{S}_0, f)
 \end{equation}
-where $G(f, \mathcal{S}_0)$ is the baseline curvature profile over the canonical anchor $\mathcal{S}_0$, and $\mathcal{D}(\mathcal{S}; \mathcal{S}_0, f) \equiv G(f, \mathcal{S}) - G(f, \mathcal{S}_0)$ is the domain-shift discrepancy.
+where $G(f, \mathcal{S}_0)$ is the baseline curvature profile over the canonical anchor $\mathcal{S}_0$, and $\mathcal{D}(\mathcal{S}; \mathcal{S}_0, f) \equiv G(f, \mathcal{S}) - G(f, \mathcal{S}_0)$ is the domain-shift discrepancy. \\
+\textit{Remark:} This formulation is a definitional accounting identity (gauge fixing) rather than an unconstrained algebraic uniqueness theorem. For non-linear splines ($\Phi''(x) \not\equiv 0$), domain shifts induce non-zero $\mathcal{D}$, whereas for purely affine functions ($\Phi(x) = ax + b$), $\operatorname{DFL}$ is identically zero regardless of domain choice.
 
 \textbf{Empirical Support Overlap in Real fMRI Data:}\\
-Auditing the empirical support of 0-Back and 2-Back across 240 ROIs (\texttt{results/primary\_analysis/node\_support\_overlap\_stats.csv}) reveals:
+Auditing the empirical support of 0-Back and 2-Back across 48 cortical ROIs (\texttt{results/primary\_analysis/node\_support\_overlap\_stats.csv}) reveals:
 \begin{itemize}
-    \item Mean within-subject condition Jaccard overlap: \textbf{$38.52\% \pm 5.08\%$} (minimum $28.59\%$, maximum $52.14\%$).
+    \item Mean cohort-aggregated condition Jaccard overlap: \textbf{$38.52\% \pm 5.08\%$} (minimum $28.59\%$, maximum $52.14\%$).
     \item The intersection covers only \textbf{$43.47\%$} of the pooled 1\%--99\% quantile domain.
-    \item As proven in Exp 2-B, evaluating a fixed function on shifted domains introduces artificial $\Delta_{\mathrm{DFL}}$ inflation up to \textbf{$+0.0816$} ($>40\times$ larger than the true task effect), demonstrating that unconstrained empirical support domains introduce major evaluation artifacts.
+    \item As proven in Exp 2-B, evaluating a fixed non-linear function on shifted domains introduces artificial $\Delta_{\mathrm{DFL}}$ inflation up to \textbf{$+0.0816$} ($>40\times$ larger than the true task effect), demonstrating that unconstrained empirical support domains introduce major evaluation artifacts.
 \end{itemize}
 
 \section*{4. Optimization Stochasticity \& Multi-Seed Inference}

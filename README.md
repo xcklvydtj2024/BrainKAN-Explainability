@@ -47,19 +47,23 @@ Multiple Seeds (S ≥ 10)  ──>  Common Support Bounding  ──>  Paired Per
 ### Q1. Are spline nonlinearities invariant to evaluation domains?
 **Answer: No.** Reference domains strongly affect Deviation-From-Linearity ($\mathrm{DFL} = \frac{\mathrm{SS}_{\mathrm{res}}}{\mathrm{SS}_{\mathrm{tot}}} = 1 - R^2$) measurements.
 * In synthetic controls (Exp 2-B), evaluating the **exact same static function** over a shifted interval inflated apparent DFL by **$+0.0816 \pm 0.0084$** (>40× larger than real model differences).
-* Auditing empirical node supports on real HCP fMRI data across 240 ROIs (`results/primary_analysis/node_support_overlap_stats.csv`) shows a mean within-subject Jaccard overlap of only **$38.52\% \pm 5.08\%$** between 0-Back and 2-Back conditions (covering only $43.47\%$ of the pooled quantile range).
+* Auditing empirical node supports on real HCP fMRI data across 48 cortical ROIs (240 directed functional edges) (`results/primary_analysis/node_support_overlap_stats.csv`) shows a mean cohort-aggregated condition Jaccard overlap of **$38.52\% \pm 5.08\%$** between 0-Back and 2-Back conditions (covering $43.47\%$ of the pooled quantile span).
 * Bounding evaluations to the Common Support eliminates these extrapolation artifacts (Exp 3).
 
-### Q2. Are single-seed conclusions reliable?
-**Answer: No.** Optimization marginalization changes the conclusion.
-* Under a single default initialization (`seed=42`, $N=500$ permutations), the model exhibited statistically significant excess nonlinearity ($\Delta = +0.0017$, $p = 0.0060$).
-* However, across 10 independent initialization seeds under a fixed data split (Exp 5), **9 out of 10 seeds produced negative differences** ($\bar{\Delta} = -0.00058$, Student's $t$ 95% CI $[-0.00130, +0.00013]$, $p = 0.9513$).
-* *Takeaway*: Single-seed conditional inference does not generalize across optimization randomness. The failure to reject the null under marginalization shows that excess nonlinearity is sensitive to initialization rather than an optimization-invariant mechanism.
+### Q2. Are single-seed conclusions reliable across optimization randomness?
+**Answer: No. But the conclusion critically depends on the reference domain estimand.**
+* **Estimand 1 — Pooled Reference Domain ($\mathcal{S}_{\mathrm{pooled}}$)**:
+  * Under a single default initialization (`seed=42`, $N=500$ permutations), the model exhibited statistically significant excess nonlinearity ($\Delta_{\mathrm{pool}} = +0.0017$, $p = 0.0060$).
+  * However, across 10 independent initialization seeds (Exp 5), **9 out of 10 seeds produced negative differences** ($\bar{\Delta}_{\mathrm{pool}} = -0.00058$, Student's $t$ 95% CI $[-0.00130, +0.00013]$, $p = 0.9513$). Single-seed conditional inference on the pooled grid completely fails to generalize.
+* **Estimand 2 — Strict Common Support Intersection ($\mathcal{S}_{\mathrm{common}} = \operatorname{supp}(X_0) \cap \operatorname{supp}(X_1)$)**:
+  * When evaluations are strictly restricted to the overlapping support, boundary extrapolation noise is filtered out.
+  * Across the exact same 10 seeds, **9 out of 10 seeds exhibit consistent positive excess curvature** ($\bar{\Delta}_{\mathrm{common}} = +0.00090 \pm 0.00055$, Student's $t$ 95% CI $[+0.00051, +0.00129]$, $t = 5.186$, $p = 0.0003$).
 
 ### Q3. Does task-associated excess nonlinearity survive rigorous controls?
-**Answer: Not under the proposed optimization-marginalized estimator.**
-* BrainKAN models consistently allocate an invariant **baseline curvature budget** ($T \approx 0.179 \pm 0.001$) across both real and label-permuted data.
-* The network inherently leverages non-linear transformations for feature representation, but task supervision does not drive extra curvature beyond this baseline once optimization uncertainty is accounted for.
+**Answer: Yes, but only when evaluation is strictly restricted to the Common Support.**
+* BrainKAN models allocate a baseline curvature level ($T \approx 0.179$ on pooled range; $T \approx 0.086$ on common support) under this architecture.
+* On the pooled range, extrapolation noise dominates the subtle task effect, leading to negative expectation.
+* On the strict common support intersection, a subtle, statistically robust task-associated excess curvature ($\bar{\Delta} \approx +0.00090$) is consistently preserved across seeds. Note that first-layer edge DFL measures localized edge transformations; comprehensive network computation also involves deeper graph compositional mechanisms.
 
 ---
 
@@ -77,8 +81,10 @@ Evaluating the **exact same underlying function** on shifted input domains creat
 
 ---
 
-### Figure 3: Optimization Variability Across Seeds (Exp 1 vs. Exp 5)
-Seed 42 is the sole positive outlier ($\Delta = +0.0017$, $p=0.006$). Marginalizing across 10 random seeds on fixed data reveals that the expected excess nonlinearity is slightly negative ($\bar{\Delta} = -0.00058$, Student's $t$ $p=0.9513$).
+### Figure 3: Dual Estimand Evaluation Across 10 Seeds (Exp 5: Pooled Domain vs. Strict Common Support)
+Side-by-side comparison illustrating why reference-domain control is decisive:
+* **Panel A (Pooled Domain $\mathcal{S}_{\mathrm{pooled}}$)**: Extrapolation artifacts dominate; Seed 42 is the sole positive outlier ($\Delta = +0.0017$), while 9/10 seeds produce negative differences ($\bar{\Delta} = -0.00058$, $p = 0.9513$).
+* **Panel B (Strict Common Support $\mathcal{S}_{\mathrm{common}}$)**: Extrapolation noise is filtered out; 9/10 seeds exhibit consistent positive excess curvature ($\bar{\Delta} = +0.00090$, Student's $t$ $95\%$ CI $[+0.00051, +0.00129]$, $t = 5.186$, $p = 0.0003$).
 ![Figure 3: Seed Variability](figures/fig3_seed_variability.png)
 
 ---
@@ -156,20 +162,28 @@ python experiments/run_exp5_parallel.py
 
 **Example Terminal Output:**
 ```text
-=== Final Seed Stability Inference (Student's t Formulation) ===
-Sample Size (Seeds): 10
-Mean Delta: -0.00058
-SD Delta:   0.00100
-SE Delta:   0.00032
-Student's t Critical (df=9, 95%): 2.262
-95% Confidence Interval (Student's t): [-0.00130, +0.00013]
-t-statistic: -1.8495
-p-value (H1: Delta > 0, one-sided): 0.9513
-Sign Consistency: 1/10 positive Deltas (Seed 42 only)
+=== DUAL-SUPPORT MULTI-SEED STABILITY AUDIT (EXP 5: POOLED vs. COMMON SUPPORT) ===
+Sample Size: 10 Seeds (df = 9)
+
+ESTIMAND 1: POOLED 1%-99% QUANTILE SUPPORT (S_pooled = Quantile([X_0, X_1]))
+  Mean T_real:      0.17939
+  Mean T_null:      0.17998
+  Mean Delta_pool:  -0.00058 (SD=0.00100, SE=0.00032)
+  95% CI (t-dist):  [-0.00130, +0.00013]
+  t-statistic:      -1.8493 (p_two_sided=0.0975, p_one_sided=0.9513)
+  Sign Consistency: 1/10 seeds positive (Seed 42 only)
+
+ESTIMAND 2: STRICT COMMON SUPPORT INTERSECTION (S_common = supp(X_0) ∩ supp(X_1))
+  Mean T_real:      0.08595
+  Mean T_null:      0.08505
+  Mean Delta_common:+0.00090 (SD=0.00055, SE=0.00017)
+  95% CI (t-dist):  [+0.00051, +0.00129]
+  t-statistic:      5.1862 (p_two_sided=0.0006, p_one_sided=0.0003)
+  Sign Consistency: 9/10 seeds positive
 ```
 
 ### 4. Audit Per-Node Empirical Support Overlap
-Calculates Jaccard overlap and pooled coverage across all 240 ROIs:
+Calculates Jaccard overlap and pooled coverage across all 48 cortical ROIs (240 functional edges):
 ```bash
 python experiments/compute_support_overlap_empirical.py
 ```

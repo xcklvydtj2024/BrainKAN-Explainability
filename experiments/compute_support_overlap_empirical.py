@@ -100,8 +100,8 @@ def main():
     out_csv = os.path.join(out_dir, "node_support_overlap_stats.csv")
     df.to_csv(out_csv, index=False)
     
-    print("\n=== Summary Statistics Across 240 ROIs ===")
-    print("1. Within-HCP Task Support (0-Back vs 2-Back):")
+    print(f"\n=== Summary Statistics Across {num_nodes} Brain ROIs (240 Functional Edges) ===")
+    print("1. Cohort Condition Support (0-Back vs 2-Back across 100 subjects):")
     print(f"   Mean Jaccard Overlap:        {df['task_jaccard_overlap'].mean()*100:.2f}% (± {df['task_jaccard_overlap'].std()*100:.2f}%)")
     print(f"   Min Jaccard Overlap:         {df['task_jaccard_overlap'].min()*100:.2f}%")
     print(f"   Median Jaccard Overlap:      {df['task_jaccard_overlap'].median()*100:.2f}%")

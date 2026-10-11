@@ -68,14 +68,14 @@ When evaluating spline functions $\Phi_{ij}$ for a given node $n$, researchers m
    $$\mathcal{S}_{\mathrm{common}}^{(n)} = \operatorname{supp}(X_n^{(0)}) \cap \operatorname{supp}(X_n^{(1)}) = \left[ \max\left(q_{0.01}(X_n^{(0)}), q_{0.01}(X_n^{(1)})\right), \; \min\left(q_{0.99}(X_n^{(0)}), q_{0.99}(X_n^{(1)})\right) \right]$$
    Constructed strictly from the overlapping region where empirical data points exist under both conditions.
 
-### 3.2 Theoretical Relationship in Within-Cohort HCP Data
-In within-cohort task-fMRI (HCP 0-back vs. 2-back), input node feature distributions under the two conditions are almost identical in variance and dynamic range:
-$$\frac{|\mathcal{S}_{\mathrm{common}}^{(n)}|}{|\mathcal{S}_{\mathrm{pooled}}^{(n)}|} > 0.998$$
-Consequently, in the primary statistical analysis (Exp 1 and Exp 5), evaluating over $\mathcal{S}_{\mathrm{pooled}}$ yields numerical values virtually identical to $\mathcal{S}_{\mathrm{common}}$. 
+### 3.2 Empirical Support Overlap in Within-Cohort HCP Data
+Auditing empirical support across the 48 cortical ROIs (`results/primary_analysis/node_support_overlap_stats.csv`) shows that condition-aggregated support overlap is partial:
+- Mean condition-level Jaccard overlap: **$38.52\% \pm 5.08\%$** (minimum $28.59\%$, maximum $52.14\%$).
+- Common support intersection coverage: **$43.47\%$** of the pooled 1%–99% quantile span.
 
-However, conceptually:
-$$\mathcal{S}_{\mathrm{common}} \subseteq \mathcal{S}_{\mathrm{pooled}}$$
-In cross-cohort transfer (Exp 3: HCP $\to$ CHCP), the distributions undergo substantial variance compression ($\nu = 0.1412$). There, $\mathcal{S}_{\mathrm{pooled}}$ extends significantly beyond the target support, causing 21.91% of points to represent extrapolation. Restricting evaluation strictly to $\mathcal{S}_{\mathrm{common}}$ in Exp 3 confirmed that the measured nonlinearity differences were not artifacts of boundary extrapolation ($\Delta_{\mathrm{common}} = +0.0025$).
+This divergence demonstrates why common support bounding is a critical methodological requirement: evaluating over $\mathcal{S}_{\mathrm{pooled}}$ inevitably queries splines on regions where one task condition lacks empirical data. 
+
+In Exp 5, we evaluate results under both $\mathcal{S}_{\mathrm{pooled}}$ and strict $\mathcal{S}_{\mathrm{common}}$ bounding to provide full inferential transparency. Furthermore, in cross-cohort transfer (Exp 3: HCP $\to$ CHCP), restricting evaluation to $\mathcal{S}_{\mathrm{common}}$ yields $\bar{\Delta}_{\mathrm{common}} = -0.000302$ (5-fold cross-validation mean), confirming that task-associated excess curvature remains non-distinguishable from zero when domain shifts are strictly controlled.
 
 ---
 
@@ -85,7 +85,7 @@ In cross-cohort transfer (Exp 3: HCP $\to$ CHCP), the distributions undergo subs
 The BrainKAN architecture contains **589,779 trainable parameters** (primarily edge-specific B-spline control points for 240 graph edges), trained on **100 paired HCP subjects** (200 fMRI graph samples). In classical statistics, $P \gg N$ introduces severe identifiability concerns.
 
 ### 4.2 Why Edge-Specific B-Splines?
-Edge-specific parameterization is biologically motivated by macroscale connectomics: each edge $(i, j)$ represents a distinct anatomical white-matter tract connecting two functionally specialized brain regions. Shared message passing (as in standard GCN) forces all brain regions to communicate via identical transfer functions, which is biologically unrealistic.
+Edge-specific parameterization is motivated by macroscale functional connectomics: each edge $(i, j)$ represents a directed functional connectivity link (derived from a 5-nearest-neighbor functional correlation graph among 48 cortical ROIs) connecting specialized brain areas. Shared message passing (as in standard GCN) forces all brain regions to communicate via identical transfer functions, which constrains functional heterogeneity.
 
 ### 4.3 The Critical Discovery: Intrinsic Capacity Bias
 The central finding of our benchmark directly resolves this dilemma:

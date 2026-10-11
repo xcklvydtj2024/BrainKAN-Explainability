@@ -38,18 +38,19 @@ Evaluating raw $\mathrm{DFL}(f_{\mathrm{real}})$ without subtracting the paired 
 Spline evaluation metrics like Deviation-From-Linearity ($\mathrm{DFL}$) are non-local functional metrics that depend explicitly on the evaluation domain $\mathcal{S} \subset \mathbb{R}$:
 $$\operatorname{DFL}(f, \mathcal{S}) = \frac{\sum_{t \in \mathcal{S}} (f(t) - \hat{y}_{\mathrm{linear}}(t))^2}{\sum_{t \in \mathcal{S}} (f(t) - \bar{y})^2}$$
 
-### Anchored Operational Decomposition
-To render domain sensitivity identifiable, we define an **anchored operational decomposition** relative to a predefined canonical support $\mathcal{S}_0$:
+### Anchored Operational Accounting
+To provide a concrete reference standard against which domain sensitivity can be audited, we define an **anchored operational decomposition** relative to a predefined canonical support $\mathcal{S}_0$:
 $$G(f, \mathcal{S}) = G(f, \mathcal{S}_0) + \mathcal{D}(\mathcal{S}; \mathcal{S}_0, f)$$
 where:
 - $G(f, \mathcal{S}_0)$ is the baseline curvature profile over the canonical anchor $\mathcal{S}_0$.
 - $\mathcal{D}(\mathcal{S}; \mathcal{S}_0, f) \equiv G(f, \mathcal{S}) - G(f, \mathcal{S}_0)$ is the domain-shift discrepancy.
+*Remark:* This formulation is a definitional accounting identity (gauge fixing) rather than an unconstrained algebraic uniqueness theorem. For non-linear splines ($\Phi''(x) \not\equiv 0$), domain shifts induce non-zero $\mathcal{D}$, whereas for purely affine functions ($\Phi(x) = ax + b$), DFL is identically zero regardless of domain choice.
 
 ### Empirical Support Overlap in Real fMRI Data
-Auditing the empirical support of 0-Back and 2-Back across 240 ROIs (`results/primary_analysis/node_support_overlap_stats.csv`) reveals:
-- Mean within-subject condition Jaccard overlap: **$38.52\% \pm 5.08\%$** (minimum $28.59\%$, maximum $52.14\%$).
+Auditing the empirical support of 0-Back and 2-Back across 48 cortical ROIs (`results/primary_analysis/node_support_overlap_stats.csv`) reveals:
+- Mean cohort-aggregated condition Jaccard overlap: **$38.52\% \pm 5.08\%$** (minimum $28.59\%$, maximum $52.14\%$).
 - The intersection covers only **$43.47\%$** of the pooled 1%–99% quantile domain.
-- As proven in Exp 2-B, evaluating a fixed function on shifted domains introduces artificial $\Delta_{\mathrm{DFL}}$ inflation up to **$+0.0816$** (>40x larger than the true task effect), demonstrating that unconstrained empirical support domains introduce major evaluation artifacts.
+- As proven in Exp 2-B, evaluating a fixed non-linear function on shifted domains introduces artificial $\Delta_{\mathrm{DFL}}$ inflation up to **$+0.0816$** (>40x larger than the true task effect), demonstrating that unconstrained empirical support domains introduce major evaluation artifacts.
 
 ---
 

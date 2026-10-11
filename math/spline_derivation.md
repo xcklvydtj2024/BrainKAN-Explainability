@@ -43,8 +43,10 @@ $$\operatorname{DFL}(f, X) = S_{\mathcal{S}_0}(f) + D(X; \mathcal{S}_0, f)$$
 This formulation provides an operational diagnostic:
 - If a model is evaluated across two conditions using their empirical data distributions $X_A$ and $X_B$, the apparent metric difference is:
   $$\Delta_{\mathrm{apparent}} = \operatorname{DFL}(f_A, X_A) - \operatorname{DFL}(f_B, X_B) = [S_{\mathcal{S}_0}(f_A) - S_{\mathcal{S}_0}(f_B)] + [D(X_A; \mathcal{S}_0, f_A) - D(X_B; \mathcal{S}_0, f_B)]$$
-- When $f_A = f_B$ (zero true functional change), any domain shift $X_A \neq X_B$ produces an artifactual effect $\Delta_{\mathrm{apparent}} = D(X_A; \mathcal{S}_0, f) - D(X_B; \mathcal{S}_0, f)$.
-- As empirically measured in Exp 2-B (`synthetic_summary.csv`), shifting the domain alone inflates measured $\Delta_{\mathrm{DFL}}$ by **$+0.0816 \pm 0.0084$** ($t = 136.6$), which is $>40\times$ larger than the entire real task effect.
+- When $f_A = f_B$ has non-vanishing second or higher derivatives across the shifted domain ($\|f''\|_{L^2(X_A \cup X_B)} > 0$), a domain shift $X_A \neq X_B$ generally induces a non-zero artifactual discrepancy:
+  $$\Delta_{\mathrm{apparent}} = D(X_A; \mathcal{S}_0, f) - D(X_B; \mathcal{S}_0, f)$$
+  *(Note: For strictly affine functions $f(x) = ax + b$, $\operatorname{DFL}$ remains identically zero on any non-degenerate interval, producing zero domain artifact).*
+- As empirically measured in Exp 2-B (`synthetic_summary.csv`) on a non-linear test function, shifting the domain alone inflates measured $\Delta_{\mathrm{DFL}}$ by **$+0.0816 \pm 0.0084$** ($t = 136.6$), which is $>40\times$ larger than the entire real task effect.
 
 ---
 
