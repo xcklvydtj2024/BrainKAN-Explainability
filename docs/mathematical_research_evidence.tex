@@ -1,0 +1,157 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{booktabs}
+\usepackage{geometry}
+\geometry{a4paper, margin=0.85in}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!70!black,
+    citecolor=blue!70!black,
+    urlcolor=blue!70!black
+}
+
+\title{\textbf{Mathematical Research Evidence: Three Methodological Case Studies from BrainKAN} \\
+\large Dossier on Mathematical Modeling, Hypothesis Testing, and Inferential Boundaries}
+\author{\textbf{Xin Qi} \\ Department of Computing / Neuroimaging AI Benchmark Release}
+\date{October 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This dossier documents three concrete methodological case studies from the BrainKAN benchmark, formulated to demonstrate core research competencies in: (1) mathematical modeling and function space analysis (operational metric definition and synthetic counterexample construction); (2) probability, hypothesis testing, and inferential boundaries (exchangeability in paired permutation null models); and (3) sensitivity analysis and statistical critique (estimand duality and directional sign-inversion under domain support constraints). Rather than highlighting high classification accuracy ($93\%$) or standard B-spline recursion formulas, these cases demonstrate the ability to interrogate operational mathematical definitions, diagnose inferential failure modes, and demarcate the exact boundaries of empirical scientific claims.
+\end{abstract}
+
+\vspace{0.5em}
+\hrule
+\vspace{1em}
+
+\section{Case 1: Mathematical Modeling \& Metric Definition: Reference Domain Sensitivity of DFL}
+
+\subsection{Mathematical Definition}
+Let $f: \mathbb{R} \to \mathbb{R}$ denote a univariate transformation (e.g., an edge-specific B-spline function in a Kolmogorov--Arnold Network), evaluated on a discrete probe grid $D = \{x_1, \dots, x_K\} \subset \mathbb{R}$ with $K \ge 3$ distinct points. To quantify the deviation of $f$ from the subspace of affine linear polynomials $\mathcal{P}_1 = \{ax + b : a, b \in \mathbb{R}\}$, we compute the best linear approximation in the $\ell_2(D)$ norm via ordinary least squares:
+\begin{equation}
+\hat{y}(x) = a^* x + b^*, \quad (a^*, b^*) = \arg\min_{a, b \in \mathbb{R}} \sum_{i=1}^K [f(x_i) - (a x_i + b)]^2
+\end{equation}
+The \textbf{Deviation-From-Linearity ($\operatorname{DFL}$)} is defined as the normalized residual sum of squares:
+\begin{equation}
+\boxed{
+\operatorname{DFL}(f; D) = \frac{\min_{a, b} \sum_{i=1}^K [f(x_i) - (a x_i + b)]^2}{\sum_{i=1}^K [f(x_i) - \bar{f}_D]^2} = \frac{\mathrm{SS}_{\mathrm{res}}}{\mathrm{SS}_{\mathrm{tot}}} = 1 - R^2
+}
+\end{equation}
+where $\bar{f}_D = \frac{1}{K} \sum_{i=1}^K f(x_i)$.
+
+\subsection{Analytical Nuances \& Non-Degeneracy Conditions}
+\begin{enumerate}
+    \item \textbf{Output Scale and Shift Invariance:} For any affine transformation $g(x) = \alpha f(x) + \beta$ ($\alpha \ne 0, \beta \in \mathbb{R}$), $\operatorname{DFL}(\alpha f + \beta; D) = \operatorname{DFL}(f; D)$. The metric is dimensionless and scale-invariant with respect to output magnitude.
+    \item \textbf{Directionality:} $\operatorname{DFL}$ measures the fraction of total variance unexplained by the affine model. Higher values indicate greater departure from linearity ($\operatorname{DFL} = 0$ corresponds to perfect linearity on $D$; $\operatorname{DFL} = 1$ indicates zero linear correlation).
+    \item \textbf{Degeneracy Convention:} The metric assumes $\mathrm{SS}_{\mathrm{tot}} > 0$. If $f$ is constant on $D$ ($f(x_i) \equiv c$), $\mathrm{SS}_{\mathrm{tot}} = 0$, yielding an indeterminate $0/0$. In our implementation, constant functions are assigned $\operatorname{DFL}(f; D) = 0$ by operational convention.
+    \item \textbf{Discrete Grid Limitation:} $\operatorname{DFL}(f; D) = 0$ guarantees collinearity only at the discrete evaluation points $\{x_i\}_{i=1}^K$; it does not mathematically guarantee that the continuous spline is affine between probe points.
+\end{enumerate}
+
+\subsection{Counterexample \& Synthetic Domain Sensitivity}
+To evaluate whether $\operatorname{DFL}$ behaves as an intrinsic property of $f$, we audited it using a controlled synthetic experiment (Exp 2):
+\begin{itemize}
+    \item \textbf{Setup:} A static ground-truth function $f(x) = \tanh(x)$ was evaluated across two reference domains: $D_1 = [-2, 2]$ and $D_2 = [0, 2]$.
+    \item \textbf{Finding:} Evaluating the \textit{exact same function} on $D_1$ versus $D_2$ produced an apparent metric jump of $\Delta \operatorname{DFL} \approx 0.0816 \pm 0.0084$ ($>40\times$ larger than typical task differences in fMRI networks).
+    \item \textbf{Crucial Technical Qualification:} $D_1 = [-2, 2]$ and $D_2 = [0, 2]$ differ in both center ($0$ vs. $1$) and width/support length ($4$ vs. $2$). Therefore, this discrepancy cannot be characterized as a pure translational effect; it reflects the joint sensitivity of the metric to domain location and scale.
+\end{itemize}
+\textbf{Competence Demonstrated:} Function space understanding, projection operator geometry, and constructing synthetic counterexamples to audit operational metrics.
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section{Case 2: Probability, Hypothesis Testing \& Scientific Inference: Permutation Null Design and Boundaries}
+
+\subsection{Formal Null Formulation \& Exchangeability}
+In task-fMRI connectomics, each human subject underwent both a 0-Back working memory block and a 2-Back working memory block in a paired design. Let $\mathcal{D} = \{(G_{i,0}, G_{i,1})\}_{i=1}^N$ denote the paired graph datasets for $N = 100$ subjects.
+\begin{itemize}
+    \item \textbf{Null Hypothesis ($H_0$):} Task condition labels $Y \in \{0, 1\}$ are exchangeable within each subject $i$:
+    \begin{equation}
+    \mathcal{L}\left((G_{i,0}, G_{i,1}) \mid Y\right) = \mathcal{L}\left((G_{i,0}, G_{i,1}) \mid \pi_i(Y)\right), \quad \forall i \in \{1, \dots, N\}
+    \end{equation}
+    \item \textbf{Invariance Structure:} Within-subject sign-flips $\pi_i \in \{(0, 1), (1, 0)\}$ with equal probability $0.5$ preserve individual anatomy ($48$ ROIs) and functional connectome topology ($240$ edges) under the null, breaking strictly the association between learned weights and task supervision.
+\end{itemize}
+
+\subsection{Test Statistic \& Exact Empirical p-value}
+With test statistic $T = \frac{1}{|E|} \sum_{e \in E} \operatorname{DFL}_e$ ($T_{\mathrm{obs}} = 0.17895$ for the real model), evaluating $B = 500$ independent paired permutation null models $\{T_b\}_{b=1}^{500}$ (Exp 1) yields the exact non-parametric permutation $p$-value:
+\begin{equation}
+\boxed{
+p = \frac{1 + \#\{T_b \ge T_{\mathrm{obs}}\}}{B + 1} = \frac{1 + 2}{500 + 1} = \frac{3}{501} \approx 0.005988 \approx 0.00599
+}
+\end{equation}
+The 500 null values yielded empirical mean $\bar{T}_{\mathrm{null}} = 0.17733$ and sample standard deviation $\sigma_{\mathrm{null}} = 0.000585$, establishing a Monte Carlo standard error of $\mathrm{SE}_{\mathrm{MC}} = \frac{0.000585}{\sqrt{500}} \approx 0.000026$.
+
+\subsection{Scientific Demarcation \& Inferential Boundaries}
+Rather than stopping at reporting statistical significance ($p \approx 0.006$), we explicitly articulate the inferential boundaries:
+\begin{enumerate}
+    \item The $p$-value quantifies the probability of observing an effect of this magnitude under the specific null hypothesis of exchangeable task labels, conditional on the fixed cohort sample and training regime.
+    \item Rejecting $H_0$ demonstrates that the learned network weights encode information non-exchangeable with respect to task labels. However, because overparameterized neural networks are non-identifiable in parameter space, \textbf{this statistical rejection does not prove that individual learned edge splines correspond to in-vivo biological mechanisms}.
+    \item The single-seed pooled-domain permutation test in Exp 1 evaluates a specific model instance on a fixed dataset; it does not replace out-of-distribution validation on external clinical cohorts.
+\end{enumerate}
+\textbf{Competence Demonstrated:} Exchangeability in paired experimental designs, finite-sample permutation testing, Monte Carlo error quantification, and intellectual restraint in scientific inference.
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section{Case 3: Sensitivity Analysis \& Estimand Duality: The Sign Inversion under Common Support}
+
+\subsection{The Critical Phenomenon: Directional Inversion of Results}
+The most compelling methodological finding is that the empirical conclusion \textbf{inverts in sign} depending on whether the evaluation domain accounts for extrapolation across condition boundaries.
+
+In Exp 5, across $S = 10$ independent random optimization seeds ($w_0 \sim \mathcal{S}$), we evaluated the paired excess curvature $\Delta_s = T(Y; s) - \frac{1}{15} \sum_{b=1}^{15} T(\pi_b(Y); s)$:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{llcccc}
+\toprule
+\textbf{Evaluation Estimand} & \textbf{Mathematical Domain} & \textbf{Mean Diff ($\bar{\Delta}$)} & \textbf{Seed Consistency} & \textbf{Student's $t$ ($df=9$)} & \textbf{One-Sided $p$} \\
+\midrule
+\textbf{Pooled Domain ($\mathcal{S}_{\mathrm{pooled}}$)} & $\text{Quantile}_{1\%-99\%}([X_0, X_1])$ & $\mathbf{-0.000583}$ ($\pm 0.00100$) & \textbf{1 / 10 Positive} (Seed 42) & $t = -1.849$ & $p = 0.9513$ \\
+\textbf{Strict Common Support ($\mathcal{S}_{\mathrm{common}}$)} & $\operatorname{supp}(X_0) \cap \operatorname{supp}(X_1)$ & $\mathbf{+0.000896}$ ($\pm 0.00055$) & \textbf{9 / 10 Positive} & $t = +5.186$ & $p = 0.0003$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Mathematical \& Methodological Diagnosis}
+\begin{enumerate}
+    \item \textbf{Extrapolation on the Pooled Grid:} Across 48 ROIs on HCP fMRI data, the Jaccard overlap between 0-Back and 2-Back empirical distributions averages $38.52\% \pm 5.08\%$ (covering $43.47\%$ of the pooled span). On $\mathcal{S}_{\mathrm{pooled}}$, splines are evaluated outside their empirical training range; boundary polynomial oscillation dominates subtle task signals, producing negative expectations for 9 out of 10 initializations.
+    \item \textbf{Isolation of Mutual Support:} Restricting evaluation to the strict intersection $\mathcal{S}_{\mathrm{common}} = [\max(q_{1,0}, q_{1,1}), \min(q_{99,0}, q_{99,1})]$ filters out extrapolation noise. Under this invariant domain, 9 out of 10 seeds consistently exhibit positive excess curvature.
+\end{enumerate}
+
+\subsection{Critical Thinking \& Inferential Boundaries}
+This case exemplifies research maturity: an apparently positive result ($p = 0.006$ on Seed 42) collapsed across seeds on the pooled domain, but emerged consistently when the domain was bounded to common support.
+\begin{itemize}
+    \item \textbf{Optimization Stochasticity vs. Population Generalization:} The paired $t$-statistic across seeds ($t = 5.186, p = 0.0003$) evaluates \textit{initialization consistency conditional on the fixed cohort sample and fixed 15 permutation vectors}. It does not claim generalizability to unseen biological populations ($\mathcal{D} \sim \mathcal{P}$).
+    \item \textbf{Shared Permutation Vectors \& Baseline Error:} The 10 seeds shared the same 15 permutation vectors, leaving common baseline error unmodeled across seeds ($\mathrm{SE}_{\mathrm{MC}} \approx 0.00015$ by illustrative order-of-magnitude proxy).
+    \item \textbf{Label-Dependent Domain Selection:} The common support interval was constructed using empirical condition distributions. While holding this grid fixed provides measurement comparability, formal finite-sample type I error rate control under label-dependent domain selection remains an open statistical question.
+\end{itemize}
+\textbf{Competence Demonstrated:} Diagnosing sign inversions driven by support boundaries, estimand demarcation, and refusing to overclaim optimization stability as population-level proof.
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{Summary Matrix of Methodological Competencies}
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{lll}
+\toprule
+\textbf{Competency Area} & \textbf{Methodological Challenge \& Solution} & \textbf{Demonstrated Skill} \\
+\midrule
+\textbf{Mathematical Modeling} & Formalized $\operatorname{DFL} = \frac{\mathrm{SS}_{\mathrm{res}}}{\mathrm{SS}_{\mathrm{tot}}} = 1-R^2$; audited on shifted domains & Function space analysis, projection operators, counterexamples \\
+\textbf{Probability \& Statistics} & Paired permutation null via within-subject sign flips ($B=500, p \approx 0.00599$) & Exchangeability, non-parametric inference, Monte Carlo bounds \\
+\textbf{Critical Thinking} & Discovered sign flip ($\bar{\Delta}: -0.00058 \to +0.00090$) between pooled/common grids & Estimand definition, domain sensitivity, inferential discipline \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\end{document}

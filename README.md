@@ -134,6 +134,7 @@ protocol/
 ## 📑 Mathematical Methodology & Theoretical Whitepapers
 
 For detailed mathematical proofs, derivations, and statistical protocols, see the compiled whitepapers:
+- 🎓 **[Mathematical Research Evidence Dossier (MD)](./docs/mathematical_research_evidence.md)** ([LaTeX Source](./docs/mathematical_research_evidence.tex)) — Three primary research competence cases: DFL metric definition & domain sensitivity, paired permutation null hypothesis testing ($p \approx 0.00599$), and multi-seed sign inversion under common support.
 - 🛡️ **[Methodological Assumptions, Boundary Conditions, and Empirical Audit (MD)](./docs/critical_methodological_defense_and_bounds.md)** — Comprehensive methodological audit of estimands, assumptions, and limitations: optimization sensitivity vs. population uncertainty, finite permutation precision ($B=15$), empirical fallback audit (0/240), evaluation gauge invariance, representation diagnostics, and $P \gg N$ capacity calibration.
 - 📋 **[Sample Pairing Manifest (CSV)](./data/subject_pairing_manifest.csv)** — Sequential pairing manifest and cross-validation partition records for 100 HCP subject pairs (`sub-HCP100-001` through `sub-HCP100-100`).
 - 📄 **[BrainKAN Mathematical Methodology (PDF)](./docs/BrainKAN_Mathematical_Methodology.pdf)** — Core mathematical derivations, edge B-spline parameterization, and codebase mappings.
@@ -216,6 +217,7 @@ BrainKAN-Explainability/
 │   ├── GNN_Edges.pt
 │   └── subject_pairing_manifest.csv   # Sample pairing manifest & 5-fold CV splits
 ├── docs/                               # Methodological audit & theoretical whitepapers
+│   ├── mathematical_research_evidence.md # 3 Primary mathematical case studies dossier
 │   ├── critical_methodological_defense_and_bounds.md
 │   ├── BrainKAN_Mathematical_Methodology.pdf
 │   ├── Anticipated Theoretical Questions.pdf
