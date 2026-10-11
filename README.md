@@ -75,6 +75,16 @@ To prevent false claims of "task-induced nonlinearity" in KAN and interpretable 
 
 ---
 
+## 📑 Mathematical Methodology & Theoretical Whitepapers
+
+For detailed mathematical proofs, derivations, and statistical protocols, see the compiled PDF whitepapers:
+- 📄 **[BrainKAN Mathematical Methodology (PDF)](./BrainKAN_Mathematical_Methodology.pdf)** — Core mathematical derivations, edge B-spline parameterization, and codebase mappings.
+- 📄 **[Anticipated Theoretical & Methodological Questions (PDF)](./docs/Anticipated%20Theoretical%20Questions.pdf)** — Academic defense addressing estimand mismatch, single-seed conditional vs. marginal inference.
+- 📄 **[Mathematical Foundations of Spline Geometry Analysis (PDF)](./docs/Mathematical%20Foundations%20of%20Spline%20Geometry%20Analysis.pdf)** — Reference-induced deformation decomposition and estimand duality.
+- 📄 **[Statistical and Theoretical Assumptions (PDF)](./docs/Statistical%20and%20Theoretical%20Assumptions.pdf)** — Detailed statistical conditions: exchangeability, common support bounding, and optimization marginalization.
+
+---
+
 ## 🚀 Reproduction & Benchmark Commands
 
 All experiments are fully deterministic and reproducible.
