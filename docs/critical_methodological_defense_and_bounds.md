@@ -27,7 +27,7 @@ $$\Delta(s, \mathcal{D}) = T(Y; s, \mathcal{D}) - \mathbb{E}_\pi [T(\pi(Y); s, \
 
 1. **Optimization Sensitivity Estimand (Conditional on Sample Cohort $\mathcal{D}$):**
    $$\bar{\Delta}_{\mathrm{opt}}(\mathcal{D}) = \mathbb{E}_{s \sim \mathcal{S}} \left[ \Delta(s, \mathcal{D}) \mid \mathcal{D} \right]$$
-   - Conditioned on the fixed benchmark cohort $\mathcal{D}$, the fixed 5-fold split, a fixed training configuration (15 epochs, AdamW optimizer, $\eta = 10^{-3}$), and a fixed set of 15 permutation flip vectors, this estimand evaluates consistency across random weight initializations ($w_0 \sim \mathcal{S}$) and stochastic batch sequencing.
+   - Conditioned on the fixed benchmark cohort $\mathcal{D}$, the fixed 5-fold split, a fixed training configuration (15 epochs, Adam optimizer, $\text{lr} = 0.005$, matching the exact runtime specification in `exp5_runner.py`), and a fixed set of 15 permutation flip vectors, this estimand evaluates consistency across random weight initializations ($w_0 \sim \mathcal{S}$) and stochastic batch sequencing.
    - **Empirical Finding in Exp 5:** On the strict common support grid, 9 out of 10 seeds yield a positive DFL difference ($\bar{\Delta}_{\mathrm{common}} = +0.00090 \pm 0.00055$, paired $t = 5.186, p = 0.0003$).
    - **Appropriate Interpretation:** This demonstrates consistency of the positive difference across the tested initializations under this specific optimization regime.
    - **Boundary Conditions:**
@@ -49,12 +49,11 @@ Exp 5 evaluates $B = 15$ permutations per seed, and all 10 seeds share the exact
 ### Technical Audit & Methodological Rationale
 - **Computational Budget:** Each seed trains $5 \text{ folds} \times (1 \text{ Real} + 15 \text{ Null}) = 80$ deep neural network models (589,779 parameters each). Running 10 seeds required training **800 models** (over 4 hours of CPU compute).
 - **Shared Permutation Vectors:** Seeds share the same 15 flip vectors (`global_flip_vectors`, generated deterministically with seeds $2026 + b$). While this controls the label permutation sequence across initializations (allowing paired comparisons across seeds), it induces covariance between the null estimates across seeds.
-- **Monte Carlo Precision Limits:**
-  - In Exp 1 (single-seed on pooled grid, $B = 500$ independent permutations), the 500 null values yielded sample mean $0.17733$ and sample standard deviation $\sigma_{\mathrm{null}} = 0.000585$, giving a Monte Carlo standard error of $\mathrm{SE}_{\mathrm{MC}} = 0.000585 / \sqrt{500} \approx 0.000026$. Exp 1 recorded $k = 2$ exceeding permutations, yielding:
-    $$p = \frac{1 + 2}{500 + 1} = \frac{3}{501} \approx 0.005988 \approx 0.0060$$
-  - *Distinction:* Exp 1 is a single-seed pooled-domain test, and does not calibrate the multi-seed common-support results of Exp 5. They address distinct questions.
-  - In Exp 5, with $B = 15$, the Monte Carlo standard error of the null mean for a single seed is approximately $\sigma_{\mathrm{null}} / \sqrt{15} \approx 0.0006 / 3.87 \approx 0.00015$. This Monte Carlo uncertainty is non-negligible relative to the observed effect size ($\bar{\Delta}_{\mathrm{common}} \approx 0.00090$).
-- **Methodological Positioning:** Exp 5 is an **algorithmic sensitivity audit** across initializations, not an asymptotic non-parametric permutation test ($B \to \infty$).
+- **Monte Carlo Precision Limits & Baseline Uncertainty:**
+  - *Exp 1 Baseline (Pooled Domain, Single Seed):* With $B = 500$ independent permutations, the null values yielded sample mean $0.17733$ and sample standard deviation $\sigma_{\mathrm{null}} = 0.000585$, giving $\mathrm{SE}_{\mathrm{MC}} = 0.000585 / \sqrt{500} \approx 0.000026$. With $k = 2$, $p = (1 + 2)/(500 + 1) = 3/501 \approx 0.005988 \approx 0.0060$.
+  - *Inferential Distinction:* Exp 1 is a single-seed pooled-domain test, and does not calibrate the multi-seed common-support results of Exp 5. They address distinct questions.
+  - *Exp 5 Monte Carlo Uncertainty (示意估算 / Illustrative Proxy):* In Exp 5, experimental logs recorded the seed-level mean null statistic $\hat{\mu}_{\mathrm{null}, s}$ rather than individual permutation runs. If we borrow the within-seed null dispersion scale from Exp 1 ($\sigma_{\mathrm{null}} \approx 0.00058$) as an illustrative order-of-magnitude proxy, the Monte Carlo standard error of a 15-permutation null mean is roughly $\mathrm{SE}_{\mathrm{MC}} \approx 0.00058 / \sqrt{15} \approx 0.00015$. This illustrative proxy highlights that finite permutation error is non-negligible relative to $\bar{\Delta}_{\mathrm{common}} \approx 0.00090$; it should not be construed as a directly measured within-seed standard deviation on the common domain.
+- **Methodological Positioning:** Exp 5 is an **algorithmic sensitivity audit** across initializations under a fixed set of permutations, not an asymptotic non-parametric permutation test ($B \to \infty$).
 
 ---
 
@@ -126,6 +125,7 @@ We released a structured sample pairing manifest and integrated complete validat
   3. Sample index mapping ($2i$ and $2i+1$).
   4. Condition labels match binary pairs $\{0, 1\}$.
   5. Dimension consistency ($48$ ROIs, $240$ edges).
+  6. Cross-validation test fold assignment (verifying each row's `cv_test_fold` against deterministic runtime `KFold(n_splits=5, shuffle=True, random_state=42)`).
 - **Provenance Scope:** Upstream raw HCP subject mapping (subject ID, scan session) is maintained in controlled local storage pursuant to HCP Open Access Data Use Terms. This manifest documents the sequential pairing, dimensional integrity, and cross-validation splits used within the benchmark.
 
 ---

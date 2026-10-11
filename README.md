@@ -59,11 +59,15 @@ Multiple Seeds (S ≥ 10)  ──>  Common Support Bounding  ──>  Paired Per
   * When evaluations are strictly restricted to the overlapping support, boundary extrapolation noise is filtered out.
   * Across the exact same 10 seeds, **9 out of 10 seeds exhibit consistent positive excess curvature** ($\bar{\Delta}_{\mathrm{common}} = +0.00090 \pm 0.00055$, Student's $t$ 95% CI $[+0.00051, +0.00129]$, $t = 5.186$, $p = 0.0003$).
 
-### Q3. Does task-associated excess nonlinearity survive rigorous controls?
-**Answer: Yes, but only when evaluation is strictly restricted to the Common Support.**
-* BrainKAN models allocate a baseline curvature level ($T \approx 0.179$ on pooled range; $T \approx 0.086$ on common support) under this architecture.
-* On the pooled range, extrapolation noise dominates the subtle task effect, leading to negative expectation.
-* On the strict common support intersection, a subtle, statistically robust task-associated excess curvature ($\bar{\Delta} \approx +0.00090$) is consistently preserved across seeds. Note that first-layer edge DFL measures localized edge transformations; comprehensive network computation also involves deeper graph compositional mechanisms.
+### Q3. What is the evidence for task-associated excess nonlinearity across initializations?
+**Answer: Under strict common support, a positive difference is observed consistently across 9/10 tested initializations, but with specific methodological boundary conditions.**
+* **Baseline Allocation:** BrainKAN models allocate a substantial baseline curvature ($T \approx 0.179$ on pooled range; $T \approx 0.086$ on common support) attributable to architectural capacity.
+* **Pooled Grid Behavior:** On the pooled range, extrapolation artifacts dominate, yielding negative differences for 9/10 seeds ($\bar{\Delta}_{\mathrm{pool}} = -0.00058$, $p = 0.9513$).
+* **Common Support Consistency:** Under the strict common support grid, in the fixed benchmark cohort and training configuration across the 15 shared permutation vectors, 9 out of 10 initialization seeds exhibit a positive DFL difference ($\bar{\Delta}_{\mathrm{common}} = +0.00090 \pm 0.00055$, paired $t = 5.186, p = 0.0003$).
+* **Essential Methodological Limitations:**
+  1. *Optimization Scope:* This reflects initialization consistency conditioned on fixed data and training settings; it does not claim generalizability to unseen subject populations or clinical cohorts.
+  2. *Shared Permutations:* The 10 seeds share the same 15 permutation flip vectors, leaving common baseline uncertainty unmodeled across seeds.
+  3. *Domain Determination:* The common support interval was derived from empirical condition distributions; formal finite-sample error rate control under label-dependent domain selection remains an open question.
 
 ---
 

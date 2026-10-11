@@ -44,9 +44,17 @@ def load_real_hcp_data():
             f"Manifest subject ID duplication: expected {num_subjects} unique IDs, found {len(manifest_df['subject_id'].unique())}."
         )
 
+    # Verify cross-validation test fold alignment with benchmark protocol KFold
+    from sklearn.model_selection import KFold
+    kf_verify = KFold(n_splits=5, shuffle=True, random_state=42)
+    expected_test_folds = {}
+    for fold_k, (_, test_indices) in enumerate(kf_verify.split(range(num_subjects))):
+        for idx in test_indices:
+            expected_test_folds[idx] = f"Fold_{fold_k + 1}"
+
     dataset = []
     # Strict validation of array ordering against sample pairing manifest:
-    # Verifies sample indices, task labels, ROI node dimensions, and edge topology.
+    # Verifies sample indices, task labels, ROI node dimensions, edge topology, and CV partition assignment.
     for i in range(num_subjects):
         row = manifest_df.iloc[i]
         
@@ -72,8 +80,15 @@ def load_real_hcp_data():
         if int(row['num_rois']) != num_nodes or int(row['num_edges']) != base_edge_index.shape[1]:
             raise ValueError(f"Dimension mismatch at pair {i}: manifest expects {row['num_rois']} ROIs / {row['num_edges']} edges, data has {num_nodes} ROIs / {base_edge_index.shape[1]} edges")
             
-        sub_id = str(row['subject_id'])
+        # Verify cross-validation test fold assignment
         cv_fold = str(row['cv_test_fold'])
+        if cv_fold != expected_test_folds[i]:
+            raise ValueError(
+                f"CV test fold assignment mismatch at pair {i}: "
+                f"manifest records {cv_fold}, but runtime KFold(n_splits=5, shuffle=True, random_state=42) expects {expected_test_folds[i]}"
+            )
+            
+        sub_id = str(row['subject_id'])
         
         d0 = Data(x=X[2*i], edge_index=base_edge_index, y=y[2*i])
         d0.subject_id = sub_id

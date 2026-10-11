@@ -61,5 +61,6 @@ The data loader (`utils_data_loading.py`) explicitly validates each sample again
 - Verifies that indices `[2*i]` and `[2*i + 1]` match the recorded subject pair $i$.
 - Confirms condition labels strictly pair $\{0, 1\}$ (0-Back vs. 2-Back).
 - Validates node dimensions ($48$) and edge counts ($240$).
-- Cross-validation splits (`KFold(n_splits=5)`) split by subject pairs, preventing cross-condition leakage.
+- Validates cross-validation test fold assignments against deterministic runtime `KFold(n_splits=5, shuffle=True, random_state=42)`, ensuring partition consistency.
+- Cross-validation splits split by subject pairs, preventing cross-condition leakage.
 - Paired label permutations apply within-subject sign flips $\pi_i \in \{0, 1\}$, preserving anatomical features and graph topology under the null.
