@@ -99,9 +99,11 @@ def run_seed_evaluation(run_seed: int, out_dir: Path):
             # Empirical audit confirms this triggered 0/240 times (0.00%) on HCP fMRI.
             if c_min >= c_max:
                 c_min, c_max = p_min, p_max
-            # Note on Fixed Evaluation Gauge: The common support grid is determined by the
-            # empirical conditions of the data and held fixed during permutation null evaluation.
-            # This ensures both real and null models are evaluated in an identical metric space.
+            # Note on Fixed Evaluation Reference Domain: The common support grid is determined
+            # from empirical condition distributions and held fixed during permutation null evaluation.
+            # This provides measurement comparability across real and null models over an identical
+            # grid; formal finite-sample error rate control under label-dependent grid selection
+            # remains an open methodological question.
             node_t_values_common[n] = torch.linspace(c_min, c_max, N_PROBE)
             
             if n == 0:

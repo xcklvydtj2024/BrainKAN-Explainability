@@ -53,10 +53,13 @@ The directory contains three core artifacts:
 3. `roi_labels.tsv`:
    - Complete metadata table mapping ROI indices 0–47 to anatomical names, HCP-MMP1 labels, and network affiliations.
 4. `subject_pairing_manifest.csv`:
-   - Complete 100-subject provenance table linking pair index, anonymous subject ID (`sub-HCP100-001` through `sub-HCP100-100`), sample indices, condition labels, ROI/edge counts, and 5-fold CV test partition assignments.
+   - Sample pairing manifest recording pair index (0–99), anonymized benchmark ID (`sub-HCP100-001` through `sub-HCP100-100`), sample indices, condition labels, ROI/edge counts, and 5-fold CV test partition assignments.
+   - *Provenance Scope:* Upstream raw HCP Subject IDs and scan session manifests are maintained in restricted/controlled storage pursuant to HCP Open Access Data Use Terms. This manifest documents the sequential pairing, dimensional integrity, and cross-validation splits used within the benchmark.
 
-### Strict Subject Pairing
-The data loader (`utils_data_loading.py`) enforces strict sequential pairing:
-- Indices `[2*i]` and `[2*i + 1]` correspond to the 0-Back and 2-Back blocks of subject $i$.
-- Cross-validation splits (`KFold(n_splits=5)`) split subjects rather than individual graphs, ensuring zero inter-condition subject leakage between training and test folds.
-- Label permutations apply paired sign-flips $\pi_i \in \{0, 1\}$ at the subject level, preserving individual neuroanatomy and graph topologies under the null.
+### Strict Sample Pairing & Loader Validation
+The data loader (`utils_data_loading.py`) explicitly validates each sample against `subject_pairing_manifest.csv`:
+- Verifies that indices `[2*i]` and `[2*i + 1]` match the recorded subject pair $i$.
+- Confirms condition labels strictly pair $\{0, 1\}$ (0-Back vs. 2-Back).
+- Validates node dimensions ($48$) and edge counts ($240$).
+- Cross-validation splits (`KFold(n_splits=5)`) split by subject pairs, preventing cross-condition leakage.
+- Paired label permutations apply within-subject sign flips $\pi_i \in \{0, 1\}$, preserving anatomical features and graph topology under the null.

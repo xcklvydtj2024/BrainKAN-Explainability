@@ -26,29 +26,64 @@ def load_real_hcp_data():
     base_edge_index = edges_data['edge_index_A']
     
     manifest_path = os.path.join(BASE_DIR, "data", "subject_pairing_manifest.csv")
-    manifest_df = None
-    if os.path.exists(manifest_path):
-        import pandas as pd
-        manifest_df = pd.read_csv(manifest_path)
+    if not os.path.exists(manifest_path):
+        raise FileNotFoundError(
+            f"Missing required manifest: {manifest_path}. "
+            "Please ensure data/subject_pairing_manifest.csv exists to verify sample pairing."
+        )
+    import pandas as pd
+    manifest_df = pd.read_csv(manifest_path)
     
-    dataset = []
-    # Strict Invariant: Each subject i has paired graphs at indices 2*i and 2*i+1.
-    # We verify condition pairing and attach verified anonymous subject IDs.
     num_subjects = num_samples // 2
+    if len(manifest_df) != num_subjects:
+        raise ValueError(
+            f"Manifest row count mismatch: expected {num_subjects} subject pairs, found {len(manifest_df)}."
+        )
+    if len(manifest_df['subject_id'].unique()) != num_subjects:
+        raise ValueError(
+            f"Manifest subject ID duplication: expected {num_subjects} unique IDs, found {len(manifest_df['subject_id'].unique())}."
+        )
+
+    dataset = []
+    # Strict validation of array ordering against sample pairing manifest:
+    # Verifies sample indices, task labels, ROI node dimensions, and edge topology.
     for i in range(num_subjects):
+        row = manifest_df.iloc[i]
+        
+        # Verify indices and pair index
+        if int(row['pair_idx']) != i:
+            raise ValueError(f"Pair index mismatch at row {i}: expected {i}, got {row['pair_idx']}")
+        if int(row['sample_0_idx']) != 2 * i or int(row['sample_1_idx']) != 2 * i + 1:
+            raise ValueError(f"Sample index mismatch at pair {i}: expected ({2*i}, {2*i+1}), got ({row['sample_0_idx']}, {row['sample_1_idx']})")
+            
         y0 = y[2 * i].item()
         y1 = y[2 * i + 1].item()
+        
+        # Verify labels against manifest
+        if int(row['sample_0_label']) != y0 or int(row['sample_1_label']) != y1:
+            raise ValueError(f"Manifest label mismatch at pair {i}: array has ({y0}, {y1}), manifest has ({row['sample_0_label']}, {row['sample_1_label']})")
         if {y0, y1} != {0, 1}:
             raise ValueError(
-                f"Data invariant violated at subject {i}: expected paired classes {{0, 1}}, got {{{y0}, {y1}}}. "
+                f"Data invariant violated at pair {i}: expected paired classes {{0, 1}}, got {{{y0}, {y1}}}. "
                 "HCP trials must be strictly paired across task conditions."
             )
-        sub_id = manifest_df.iloc[i]['subject_id'] if manifest_df is not None else f"sub-HCP100-{i+1:03d}"
+            
+        # Verify ROI and edge dimensions
+        if int(row['num_rois']) != num_nodes or int(row['num_edges']) != base_edge_index.shape[1]:
+            raise ValueError(f"Dimension mismatch at pair {i}: manifest expects {row['num_rois']} ROIs / {row['num_edges']} edges, data has {num_nodes} ROIs / {base_edge_index.shape[1]} edges")
+            
+        sub_id = str(row['subject_id'])
+        cv_fold = str(row['cv_test_fold'])
         
         d0 = Data(x=X[2*i], edge_index=base_edge_index, y=y[2*i])
         d0.subject_id = sub_id
+        d0.condition = str(row['sample_0_condition'])
+        d0.cv_test_fold = cv_fold
+        
         d1 = Data(x=X[2*i+1], edge_index=base_edge_index, y=y[2*i+1])
         d1.subject_id = sub_id
+        d1.condition = str(row['sample_1_condition'])
+        d1.cv_test_fold = cv_fold
         
         dataset.append((d0, d1))
         
