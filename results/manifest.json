@@ -9,8 +9,8 @@
             "seed": 42,
             "n_permutations": 500,
             "t_real": 0.17895,
-            "t_null_mean": 0.17723,
-            "delta_task": 0.00172,
+            "t_null_mean": 0.17733,
+            "delta_task": 0.00162,
             "p_value": 0.0060,
             "note": "Conditional significance for seed 42. Does not generalize across optimization randomness."
         },

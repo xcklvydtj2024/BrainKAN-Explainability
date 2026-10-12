@@ -46,14 +46,14 @@ Multiple Seeds (S ≥ 10)  ──>  Common Support Bounding  ──>  Paired Per
 
 ### Q1. Are spline nonlinearities invariant to evaluation domains?
 **Answer: No.** Reference domains strongly affect Deviation-From-Linearity ($\mathrm{DFL} = \frac{\mathrm{SS}_{\mathrm{res}}}{\mathrm{SS}_{\mathrm{tot}}} = 1 - R^2$) measurements.
-* In synthetic controls (Exp 2-B), evaluating the **exact same static function** over a shifted interval inflated apparent DFL by **$+0.0816 \pm 0.0084$** (>40× larger than real model differences).
+* In synthetic controls (Exp 2-B), evaluating the **exact same learned model** (fitted to $f^*(x) = x + 0.5\sin(2x)$) over a shifted interval inflated apparent DFL by **$+0.0816 \pm 0.0084$** (>40× larger than real model differences).
 * Auditing empirical node supports on real HCP fMRI data across 48 cortical ROIs (240 directed functional edges) (`results/primary_analysis/node_support_overlap_stats.csv`) shows a mean cohort-aggregated condition Jaccard overlap of **$38.52\% \pm 5.08\%$** between 0-Back and 2-Back conditions (covering $43.47\%$ of the pooled quantile span).
 * Bounding evaluations to the Common Support eliminates these extrapolation artifacts (Exp 3).
 
 ### Q2. Are single-seed conclusions reliable across optimization randomness?
 **Answer: No. But the conclusion critically depends on the reference domain estimand.**
 * **Estimand 1 — Pooled Reference Domain ($\mathcal{S}_{\mathrm{pooled}}$)**:
-  * Under a single default initialization (`seed=42`, $N=500$ permutations), the model exhibited statistically significant excess nonlinearity ($\Delta_{\mathrm{pool}} = +0.0017$, $p = 0.0060$).
+  * Under a single default initialization (`seed=42`, $N=500$ permutations in Exp 1), the model exhibited statistically significant excess nonlinearity ($\Delta_{\mathrm{pool}} = +0.00162$, $p = 0.00599 \approx 0.0060$). In Exp 5's 15-permutation screening, Seed 42 yielded $\Delta = +0.00172$.
   * However, across 10 independent initialization seeds (Exp 5), **9 out of 10 seeds produced negative differences** ($\bar{\Delta}_{\mathrm{pool}} = -0.00058$, Student's $t$ 95% CI $[-0.00130, +0.00013]$, $p = 0.9513$). Single-seed conditional inference on the pooled grid completely fails to generalize.
 * **Estimand 2 — Strict Common Support Intersection ($\mathcal{S}_{\mathrm{common}} = \operatorname{supp}(X_0) \cap \operatorname{supp}(X_1)$)**:
   * When evaluations are strictly restricted to the overlapping support, boundary extrapolation noise is filtered out.
@@ -80,7 +80,7 @@ The benchmark pipeline connecting raw HCP fMRI graphs, edge-specific B-spline co
 ---
 
 ### Figure 2: The Reference Domain Effect (Exp 2 Synthetic Calibration)
-Evaluating the **exact same underlying function** on shifted input domains creates a massive apparent nonlinearity jump ($\Delta = +0.0816$), >40× larger than real model differences.
+Evaluating the **exact same learned model** (fitted to $f^*(x) = x + 0.5\sin(2x)$) on shifted input domains creates a massive apparent nonlinearity jump ($\Delta = +0.0816 \pm 0.0084$), >40× larger than real model differences.
 ![Figure 2: Reference Domain Effect](figures/fig2_reference_domain_effect.png)
 
 ---

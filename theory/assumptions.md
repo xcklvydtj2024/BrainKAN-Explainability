@@ -50,7 +50,7 @@ where:
 Auditing the empirical support of 0-Back and 2-Back across 48 cortical ROIs (`results/primary_analysis/node_support_overlap_stats.csv`) reveals:
 - Mean cohort-aggregated condition Jaccard overlap: **$38.52\% \pm 5.08\%$** (minimum $28.59\%$, maximum $52.14\%$).
 - The intersection covers only **$43.47\%$** of the pooled 1%–99% quantile domain.
-- As proven in Exp 2-B, evaluating a fixed non-linear function on shifted domains introduces artificial $\Delta_{\mathrm{DFL}}$ inflation up to **$+0.0816$** (>40x larger than the true task effect), demonstrating that unconstrained empirical support domains introduce major evaluation artifacts.
+- As proven in Exp 2-B, evaluating a fixed model (fitted to $f^*(x) = x + 0.5\sin(2x)$) on shifted domains introduces artificial $\Delta_{\mathrm{DFL}}$ inflation up to **$+0.0816 \pm 0.0084$** (>40x larger than typical task differences), demonstrating that unconstrained empirical support domains introduce major evaluation artifacts.
 
 ---
 
@@ -60,12 +60,16 @@ Auditing the empirical support of 0-Back and 2-Back across 48 cortical ROIs (`re
 Because deep neural networks navigate non-convex loss landscapes, learned spline parameters are realization-dependent:
 1. **Conditional Estimand (Fixed Seed $s$):**
    $$\Delta(s) = T_{\mathrm{real}}(s) - \bar{T}_{\mathrm{null}}(s)$$
-   For Seed 42, $\Delta(42) = +0.00172$, achieving conditional significance ($p = 0.0060$ under 500 permutations).
+   In Exp 1 ($B=500$ permutations, Seed 42), the model achieved conditional significance ($\Delta = +0.00162, p = 0.00599 \approx 0.0060$). In Exp 5's 15-permutation screening, Seed 42 yielded $\Delta(42) = +0.00172$.
 2. **Optimization-Marginalized Estimand:**
    $$\bar{\Delta} = \mathbb{E}_{s \sim \mathcal{S}} [\Delta(s)]$$
+
+### Empirical Benchmark Findings (Exp 5: Dual Estimand Contrast)
+Evaluating across 10 independent initialization seeds under a fixed data split:
+- **Pooled Reference Domain ($\mathcal{S}_{\mathrm{pooled}}$):** $\bar{\Delta}_{\mathrm{pool}} = -0.00058 \pm 0.00100$ (Student's $t$ $df=9$: $t = -1.849$, one-sided $p = 0.9513$, 95% CI: $[-0.00130, +0.00013]$). Only 1 of 10 seeds (Seed 42) exhibited $\Delta > 0$. Boundary extrapolation artifacts dominate.
+- **Empirical Common Support ($\mathcal{S}_{\mathrm{common}}$):** $\bar{\Delta}_{\mathrm{common}} = +0.00090 \pm 0.00055$ (Student's $t$ $df=9$: $t = +5.186$, one-sided $p = 0.0003$, 95% CI: $[+0.00051, +0.00129]$). 9 of 10 seeds exhibited $\Delta > 0$.
 
 ### Inferential Qualification
 - **Sampling Scope:** The 10 seeds evaluated in Exp 5 represent independent optimization initializations on a **fixed dataset and fixed 5-fold cross-validation split**. They quantify algorithmic training stochasticity, not inter-subject biological cohort variation.
 - **Null Distribution Structure:** Each seed computes a paired null mean across 15 label permutations sharing a common pre-generated flip-vector bank.
-- **Statistical Test:** The cross-seed summary ($\bar{\Delta} = -0.00058$, $95\%\text{ CI } [-0.00130, +0.00013]$, $p = 0.9513$) is derived from a one-sample Student's $t$-test ($df=9$) across seed-level differences.
-- **Conclusion:** Under the predefined one-sided alternative, the marginal effect does not support rejection of the null hypothesis. Conditional significance at a single seed cannot be generalized across optimization randomness.
+- **Conclusion:** On the pooled domain, single-seed conditional significance at Seed 42 fails to generalize across initializations due to boundary extrapolation noise. Restricting evaluation to empirical common support isolates consistent positive excess curvature across 9/10 initializations, demonstrating that scientific conclusions depend decisively on estimand specification.

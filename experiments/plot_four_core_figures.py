@@ -81,15 +81,15 @@ def make_figure_2():
     fig = plt.figure(figsize=(14, 5), dpi=300)
     gs = GridSpec(1, 3, width_ratios=[1.2, 1.2, 0.9], wspace=0.3)
     
-    # Mathematical ground truth function
-    x_dense = np.linspace(-3.5, 3.5, 500)
+    # Mathematical ground truth function matching Exp 2 DGP: f*(x) = x + 0.5 * sin(2x)
+    x_dense = np.linspace(-3.0, 3.0, 500)
     def true_f(x):
-        return 1.2 * np.tanh(1.2 * x) + 0.15 * x
+        return x + 0.5 * np.sin(2.0 * x)
     
     y_dense = true_f(x_dense)
     
-    # Domain A (Centered: [-1.2, 1.2])
-    dom_a = np.linspace(-1.2, 1.2, 100)
+    # Domain A (Full Symmetric: [-2.0, 2.0], Linear-Dominant)
+    dom_a = np.linspace(-2.0, 2.0, 100)
     y_a = true_f(dom_a)
     p_a = np.polyfit(dom_a, y_a, 1)
     lin_a = np.polyval(p_a, dom_a)
@@ -97,8 +97,8 @@ def make_figure_2():
     ss_res_a = np.sum((y_a - lin_a)**2)
     dfl_a = ss_res_a / ss_tot_a
     
-    # Domain B (Shifted & Extended: [-0.5, 3.0])
-    dom_b = np.linspace(-0.5, 3.0, 100)
+    # Domain B (Restricted Half-Cycle: [0.0, 2.0], Curvature-Dominant)
+    dom_b = np.linspace(0.0, 2.0, 100)
     y_b = true_f(dom_b)
     p_b = np.polyfit(dom_b, y_b, 1)
     lin_b = np.polyval(p_b, dom_b)
@@ -106,32 +106,32 @@ def make_figure_2():
     ss_res_b = np.sum((y_b - lin_b)**2)
     dfl_b = ss_res_b / ss_tot_b
     
-    # Panel A: Centered Domain
+    # Panel A: Full Symmetric Domain
     ax1 = fig.add_subplot(gs[0])
-    ax1.plot(x_dense, y_dense, color='#90A4AE', lw=1.5, ls='--', label='Underlying function')
+    ax1.plot(x_dense, y_dense, color='#90A4AE', lw=1.5, ls='--', label=r'Target $f^*(x)=x+0.5\sin(2x)$')
     ax1.plot(dom_a, y_a, color='#1E88E5', lw=3, label='Evaluated span')
     ax1.plot(dom_a, lin_a, color='#E53935', lw=2, ls=':', label=f'Linear fit (DFL={dfl_a:.4f})')
-    ax1.axvspan(-1.2, 1.2, color='#E3F2FD', alpha=0.5)
-    ax1.set_title("A. Reference Domain 1\n(Central Linear-Dominant Regime)", fontsize=11, weight='bold')
+    ax1.axvspan(-2.0, 2.0, color='#E3F2FD', alpha=0.5)
+    ax1.set_title("A. Reference Domain 1\n(Full Symmetric $[-2, 2]$, Linear Dominant)", fontsize=11, weight='bold')
     ax1.set_xlabel("Input feature $x$")
-    ax1.set_ylabel("Spline output $y$")
-    ax1.set_ylim(-1.8, 1.8)
+    ax1.set_ylabel("Function output $y$")
+    ax1.set_ylim(-2.8, 2.8)
     ax1.legend(loc='upper left', frameon=True, fontsize=9)
-    ax1.text(0, -1.5, f"Measured DFL: {dfl_a:.4f}", ha='center', weight='bold', color='#1E88E5',
+    ax1.text(0, -2.3, f"Measured DFL: {dfl_a:.4f}", ha='center', weight='bold', color='#1E88E5',
              bbox=dict(boxstyle='round,pad=0.3', facecolor='#E3F2FD', edgecolor='#1E88E5'))
     
-    # Panel B: Shifted Domain
+    # Panel B: Restricted Domain
     ax2 = fig.add_subplot(gs[1])
-    ax2.plot(x_dense, y_dense, color='#90A4AE', lw=1.5, ls='--', label='Underlying function')
+    ax2.plot(x_dense, y_dense, color='#90A4AE', lw=1.5, ls='--', label=r'Target $f^*(x)=x+0.5\sin(2x)$')
     ax2.plot(dom_b, y_b, color='#7B1FA2', lw=3, label='Evaluated span')
     ax2.plot(dom_b, lin_b, color='#E53935', lw=2, ls=':', label=f'Linear fit (DFL={dfl_b:.4f})')
-    ax2.axvspan(-0.5, 3.0, color='#F3E5F5', alpha=0.5)
-    ax2.set_title("B. Reference Domain 2\n(Shifted into Saturation Regime)", fontsize=11, weight='bold')
+    ax2.axvspan(0.0, 2.0, color='#F3E5F5', alpha=0.5)
+    ax2.set_title("B. Reference Domain 2\n(Restricted $[0, 2]$, Curvature Dominant)", fontsize=11, weight='bold')
     ax2.set_xlabel("Input feature $x$")
-    ax2.set_ylabel("Spline output $y$")
-    ax2.set_ylim(-1.8, 1.8)
+    ax2.set_ylabel("Function output $y$")
+    ax2.set_ylim(-2.8, 2.8)
     ax2.legend(loc='upper left', frameon=True, fontsize=9)
-    ax2.text(1.2, -1.5, f"Measured DFL: {dfl_b:.4f}", ha='center', weight='bold', color='#7B1FA2',
+    ax2.text(1.0, -2.3, f"Measured DFL: {dfl_b:.4f}", ha='center', weight='bold', color='#7B1FA2',
              bbox=dict(boxstyle='round,pad=0.3', facecolor='#F3E5F5', edgecolor='#7B1FA2'))
     
     # Panel C: Exp 2 Calibration Results - Dynamically Loaded

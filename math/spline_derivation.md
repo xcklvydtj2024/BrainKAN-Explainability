@@ -46,7 +46,7 @@ This formulation provides an operational diagnostic:
 - When $f_A = f_B$ has non-vanishing second or higher derivatives across the shifted domain ($\|f''\|_{L^2(X_A \cup X_B)} > 0$), a domain shift $X_A \neq X_B$ generally induces a non-zero artifactual discrepancy:
   $$\Delta_{\mathrm{apparent}} = D(X_A; \mathcal{S}_0, f) - D(X_B; \mathcal{S}_0, f)$$
   *(Note: For strictly affine functions $f(x) = ax + b$, $\operatorname{DFL}$ remains identically zero on any non-degenerate interval, producing zero domain artifact).*
-- As empirically measured in Exp 2-B (`synthetic_summary.csv`) on a non-linear test function, shifting the domain alone inflates measured $\Delta_{\mathrm{DFL}}$ by **$+0.0816 \pm 0.0084$** ($t = 136.6$), which is $>40\times$ larger than the entire real task effect.
+- As empirically measured in Exp 2-B (`synthetic_summary.csv`) on a fixed model fitted to $f^*(x) = x + 0.5\sin(2x)$, shifting the reference domain alone inflates measured $\Delta_{\mathrm{DFL}}$ by **$+0.0816 \pm 0.0084$** ($t = 136.6$), which is $>40\times$ larger than typical real task condition differences.
 
 ---
 
@@ -58,21 +58,25 @@ Deep neural networks navigate non-convex loss landscapes. The learned parameters
 For a fixed seed $s$, the conditional excess curvature is:
 $$\Delta(s) = T_{\mathrm{real}}(s) - \bar{T}_{\mathrm{null}}(s)$$
 Testing $H_0^{(s)}: \Delta(s) \le 0$ evaluates whether real labels induced greater curvature *within the specific optimization basin reached by seed $s$*.
-- For Seed 42, $\Delta(42) = +0.00172$, achieving conditional significance ($p = 0.0060$ under 500 permutations).
+- In Exp 1 ($B=500$ permutations, Seed 42), the model achieved conditional significance with $\Delta = +0.00162$ ($p = 0.00599 \approx 0.0060$).
+- In Exp 5's 15-permutation screening, Seed 42 yielded $\Delta(42) = +0.00172$.
 
 ### 2. Optimization-Marginalized Estimand
 The scientific hypothesis of interest across optimization randomness is the marginal expectation:
 $$\bar{\Delta} = \mathbb{E}_{s \sim \mathcal{S}} [\Delta(s)] = \mathbb{E}_s [T_{\mathrm{real}}(s)] - \mathbb{E}_{s} [\bar{T}_{\mathrm{null}}(s)]$$
 
-### Empirical Benchmark Findings (Exp 5)
+### Empirical Benchmark Findings (Exp 5: Dual Estimand Contrast)
 Evaluating across 10 independent initialization seeds under a fixed data split:
-- **Mean effect:** $\bar{\Delta} = -0.00058$
-- **Standard deviation:** $\mathrm{SD} = 0.00100$, $\mathrm{SE} = 0.00032$
-- **Student's $t$-test ($df=9$):** $t = -1.82$, one-sided $p = 0.9513$ (95% CI: $[-0.00130, +0.00013]$)
-- **Sign consistency:** Only 1 of 10 seeds (Seed 42) exhibited $\Delta > 0$.
+1. **Pooled Reference Domain ($\mathcal{S}_{\mathrm{pooled}}$):**
+   - Mean effect: $\bar{\Delta}_{\mathrm{pool}} = -0.00058 \pm 0.00100$ ($\mathrm{SE} = 0.00032$)
+   - Student's $t$-test ($df=9$): $t = -1.849$, one-sided $p = 0.9513$ (95% CI: $[-0.00130, +0.00013]$)
+   - Sign consistency: Only 1 of 10 seeds (Seed 42) exhibited $\Delta > 0$. Boundary extrapolation noise dominates.
+2. **Empirical Common Support ($\mathcal{S}_{\mathrm{common}} = [q_1^{(0)}, q_{99}^{(0)}] \cap [q_1^{(1)}, q_{99}^{(1)}]$):**
+   - Mean effect: $\bar{\Delta}_{\mathrm{common}} = +0.00090 \pm 0.00055$ ($\mathrm{SE} = 0.00017$)
+   - Student's $t$-test ($df=9$): $t = +5.186$, one-sided $p = 0.0003$ (95% CI: $[+0.00051, +0.00129]$)
+   - Sign consistency: 9 of 10 seeds exhibited $\Delta > 0$. Filtering out unobserved support domains reveals consistent positive curvature.
 
 ### Inferential Qualifications
 1. **Sampling Scope:** The 10 seeds evaluate algorithmic optimization variability under a fixed dataset; they do not represent 10 independent biological cohorts.
 2. **Finite Permutations & Shared Vectors:** Each seed's null mean is estimated from $B=15$ permutations sharing identical subject sign-flip vectors.
-3. **Student's $t$ Inference:** The confidence interval assumes approximate normality of within-seed effect estimates across initialization basins.
-4. **Conclusion:** Under the predefined one-sided alternative, the marginal effect does not support rejection of the null hypothesis. Conditional significance at a single seed fails to generalize across optimization randomness.
+3. **Estimand Sensitivity:** Scientific conclusions depend critically on the choice of reference domain: on the pooled domain, tail extrapolation artifacts produce negative expectations, while restricting evaluations to empirical common support yields consistent positive excess curvature across initializations.
