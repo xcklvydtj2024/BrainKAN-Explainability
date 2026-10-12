@@ -44,7 +44,7 @@ Mathematical Question: "Does learned spline curvature reflect task mechanisms or
 Operational Definition: Deviation-From-Linearity (DFL = 1 - R^2) on finite evaluation grid D
         │
         ▼
-Synthetic Counterexample: Static tanh(x) yields Δ ≈ 0.0816 purely from evaluation domain shift
+Synthetic Model Audit: Fixed model on f*(x)=x+0.5sin(2x) yields Δ ≈ 0.0816 from domain shift
         │
         ▼
 Statistical Validation: Paired topology-preserving permutation null models (B = 500, p ≈ 0.00599)
@@ -80,11 +80,18 @@ where $\bar{f}_D = \frac{1}{K} \sum_{i=1}^K f(x_i)$.
     \item Discrete Grid Limitation: $\operatorname{DFL}(f; D) = 0$ guarantees collinearity only at the discrete sample points $\{x_i\}_{i=1}^K$. It does not mathematically guarantee that the continuous spline is affine in the continuum between probe points.
 \end{enumerate}
 
-\subsection{Synthetic Counterexample \& Domain Sensitivity}
-To audit whether $\operatorname{DFL}$ behaves as an intrinsic invariant of $f$ or depends on the evaluation grid, we evaluated a static ground-truth test function $f(x) = \tanh(x)$ across two reference domains (Exp 2):
+\subsection{Synthetic Model Calibration \& Domain Sensitivity (Exp 2-B)}
+To audit whether $\operatorname{DFL}$ behaves as an intrinsic invariant of a learned mechanism or depends on the choice of evaluation grid, we conducted a controlled synthetic audit (\texttt{exp2\_synthetic\_calibration.py}):
 \begin{itemize}
-    \item Finding: Evaluating the exact same static function on $D_1 = [-2, 2]$ versus $D_2 = [0, 2]$ produced an apparent metric discrepancy of $\Delta \operatorname{DFL} \approx 0.0816 \pm 0.0084$ ($>40\times$ larger than typical task differences in fMRI networks).
-    \item Methodological Qualification: $D_1 = [-2, 2]$ and $D_2 = [0, 2]$ differ not only in their center ($0$ vs. $1$), but also in their support length ($4$ vs. $2$). Therefore, this discrepancy cannot be characterized as a pure translational effect; it reflects the joint sensitivity of the metric to domain location and scale.
+    \item Data Generating Process: Ground-truth target $y = f^*(x) + \epsilon$, where $f^*(x) = x + 0.5\sin(2x)$, $x \sim \mathcal{N}(0, 1)$, and $\epsilon \sim \mathcal{N}(0, 0.05^2)$.
+    \item Learned Representation: A B-spline KAN layer (\texttt{SyntheticEdgeKAN}) was fitted to this target, yielding a parameter-frozen learned model $\hat{f}$.
+    \item Evaluation Domain Shift: Holding the identical learned model $\hat{f}$ completely fixed, we evaluated $\operatorname{DFL}(\hat{f}; D)$ over two 100-point uniform probe grids:
+    \begin{itemize}
+        \item $D_1 = [-2.0, 2.0]$ (full symmetric interval, where the linear drift $x$ accounts for most sample variance, yielding mean $\operatorname{DFL} \approx 0.0388 \pm 0.0024$).
+        \item $D_2 = [0.0, 2.0]$ (restricted half-cycle, where the oscillatory harmonic $0.5\sin(2x)$ constitutes a larger fraction of variance relative to the linear trend, yielding mean $\operatorname{DFL} \approx 0.1204 \pm 0.0084$).
+    \end{itemize}
+    \item Finding: Across $N = 200$ independent simulation trials, evaluating the exact same learned model on $D_2$ versus $D_1$ produced an artifactual metric inflation of $\Delta \operatorname{DFL} = +0.0816 \pm 0.0084$ ($t = 136.6$), which is $>40\times$ larger than typical task condition differences in real fMRI networks ($\sim 0.0009$).
+    \item Methodological Qualification: $D_1 = [-2, 2]$ and $D_2 = [0, 2]$ differ simultaneously in their center ($0$ vs. $1$) and support length ($4$ vs. $2$). This demonstrates that even for a fixed learned representation, $\operatorname{DFL}$ reflects the joint sensitivity of the metric to evaluation location and scale rather than an invariant property of the underlying network function.
 \end{itemize}
 
 \vspace{0.5em}
@@ -164,7 +171,7 @@ In Exp 5, across $S = 10$ independent random optimization seeds ($w_0 \sim \math
 \section{Evidence of Research Capability}
 This benchmark illustrates core methodological competencies essential for advanced graduate research:
 \begin{enumerate}
-    \item \textbf{Metric Scrutiny over Black-Box Metrics:} Rather than treating $\operatorname{DFL} = 1 - R^2$ as an intrinsic measure of biological curvature, we formalized it as an empirical projection residual against an affine hypothesis class and demonstrated its joint location-scale sensitivity via synthetic counterexamples.
+    \item \textbf{Metric Scrutiny over Black-Box Metrics:} Rather than treating $\operatorname{DFL} = 1 - R^2$ as an intrinsic measure of biological curvature, we formalized it as an empirical projection residual against an affine hypothesis class and demonstrated its joint location-scale sensitivity via controlled synthetic calibration.
     \item \textbf{Principled Statistical Inference:} Rather than celebrating an empirical $p \approx 0.006$ as ``proof of neural mechanisms,'' we explicitly articulated the conditioning on label exchangeability, model capacity, and dataset-specific baselines.
     \item \textbf{Estimand Awareness \& Scientific Restraint:} Discovering that the sign of the effect inverts (from $-0.00058$ to $+0.00090$) between the pooled domain and the empirical overlap region prevented false scientific conclusions. The observed direction of the estimated effect can depend critically on the chosen evaluation domain, underscoring the need to distinguish measurement sensitivity from biological interpretation.
     \item \textbf{Research Philosophy:} The objective of this work was not to maximize model complexity, but to develop reliable criteria for interpreting learned representations. If extending this project, the primary priority is establishing formal subject-level uncertainty quantification (via hierarchical Bayesian modeling or nested subject-level resampling), rather than scaling architectural complexity.
