@@ -69,6 +69,14 @@ Multiple Seeds (S ≥ 10)  ──>  Common Support Bounding  ──>  Paired Per
   2. *Shared Permutations:* The 10 seeds share the same 15 permutation flip vectors, leaving common baseline uncertainty unmodeled across seeds.
   3. *Domain Determination:* The common support interval was derived from empirical condition distributions; formal finite-sample error rate control under label-dependent domain selection remains an open question.
 
+### 🗺️ Methodological Mapping: Exploratory Protocol (Q3A–C) to Formal Benchmark Suite (Exp 1–5)
+| Exploratory Protocol | Core Question | Production Benchmark Realization | Empirical Outcome |
+| :--- | :--- | :--- | :--- |
+| **Q3A (Operating-Regime Sensitivity)** | Does apparent curvature differ under unstandardized input regimes? | **Exp 2** (Synthetic Calibration) & **Exp 3** (Reference Domain Control) | Falsified as artifactual: domain shifts inflate apparent DFL by $+0.0816$ (>40× real differences). |
+| **Q3B (Common-Reference Geometry)** | Does structural nonlinearity persist on an aligned intra-fold reference domain? | **Exp 1** (High-Precision Permutation Test, $N=500$, Seed 42) | Single-seed conditional significance ($\Delta = +0.00162, p = 0.0060$). |
+| **Q3C (Effective Gain & Identifiability)** | Does edge nonlinearity provide genuine structural identifiability? | **Exp 4** (Capacity Calibration vs. Parameter-Matched MLP) | Identical parameter budgets ($1,776$ params) show curvature baseline is driven by capacity. |
+| **Synthesis $\longrightarrow$ Exp 5** | Does task excess curvature generalize across optimization randomness? | **Exp 5** (Multi-Seed SMPT, $S=10$ Seeds $\times$ $15$ Permutations, Dual Estimands) | **Pooled Domain:** $\bar{\Delta}_{\mathrm{pool}} = -0.00058$ ($p = 0.9513$, 9/10 negative).<br>**Common Support:** $\bar{\Delta}_{\mathrm{common}} = +0.00090$ ($p = 0.0003$, 9/10 positive). |
+
 ---
 
 ## 📊 Core Diagnostic Figures
@@ -134,6 +142,8 @@ protocol/
 ## 📑 Mathematical Methodology & Theoretical Whitepapers
 
 For detailed mathematical proofs, derivations, and statistical protocols, see the compiled whitepapers:
+- 📌 **[BrainKAN Two-Page Research Evidence Brief (PDF)](./docs/BrainKAN_Research_Evidence_Brief.pdf)** ([Markdown Version](./docs/BrainKAN_Research_Evidence_Brief.md) | [LaTeX Source](./docs/BrainKAN_Research_Evidence_Brief.tex)) — Concise 2-page technical dossier for academic committees: Page 1 covers the core research problem, B-spline architecture, HCP dataset, and experimental design; Page 2 details empirical results, inferential boundaries, and full codebase paths.
+- 🔍 **[BrainKAN Data and Code Audit Report (MD)](./docs/audit_report.md)** — All 5 methodological audit items closed (pairing integrity, reference domain leak prevention, exception fallback audit, model parameter matching).
 - 🎓 **[Mathematical Research Evidence: Methodological Analysis (MD)](./docs/mathematical_research_evidence.md)** ([LaTeX Source](./docs/mathematical_research_evidence.tex)) — Candidate research evidence dossier: empirical DFL metric definition & domain sensitivity, paired permutation null hypothesis testing ($p \approx 0.00599$), and estimand-dependent sign reversal under empirical common support.
 - 🛡️ **[Methodological Assumptions, Boundary Conditions, and Empirical Audit (MD)](./docs/critical_methodological_defense_and_bounds.md)** — Comprehensive methodological audit of estimands, assumptions, and limitations: optimization sensitivity vs. population uncertainty, finite permutation precision ($B=15$), empirical fallback audit (0/240), evaluation gauge invariance, representation diagnostics, and $P \gg N$ capacity calibration.
 - 📋 **[Sample Pairing Manifest (CSV)](./data/subject_pairing_manifest.csv)** — Sequential pairing manifest and cross-validation partition records for 100 HCP subject pairs (`sub-HCP100-001` through `sub-HCP100-100`).
@@ -217,6 +227,8 @@ BrainKAN-Explainability/
 │   ├── GNN_Edges.pt
 │   └── subject_pairing_manifest.csv   # Sample pairing manifest & 5-fold CV splits
 ├── docs/                               # Methodological audit & theoretical whitepapers
+│   ├── BrainKAN_Research_Evidence_Brief.pdf # Concise 2-page candidate technical dossier
+│   ├── audit_report.md                 # Formally closed code and data audit report
 │   ├── mathematical_research_evidence.md # 3 Primary mathematical case studies dossier
 │   ├── critical_methodological_defense_and_bounds.md
 │   ├── BrainKAN_Mathematical_Methodology.pdf
@@ -240,12 +252,14 @@ BrainKAN-Explainability/
 │   ├── estimands.md
 │   └── decision_rules.md
 ├── results/                            # Experimental CSV outputs and manifest
-│   ├── exp1_high_precision/
-│   ├── exp2_synthetic/
-│   ├── exp3_ref_domain/
-│   ├── exp5_seed_stability/
-│   ├── primary_analysis/
-│   └── manifest.json
+│   ├── exp1_high_precision/            # Production Exp 1 permutation baseline (N=500)
+│   ├── exp2_synthetic/                 # Production Exp 2 synthetic calibration (N=200)
+│   ├── exp3_ref_domain/                # Production Exp 3 reference domain control
+│   ├── exp4_multi_seed/                # Production Exp 4 capacity scan
+│   ├── exp5_seed_stability/            # Production Exp 5 SMPT dual estimands (S=10)
+│   ├── primary_analysis/               # Active empirical node support overlap audit
+│   ├── archived_runs/                  # Archived historical pilot diagnostic runs
+│   └── manifest.json                   # Full commit SHA, environment & canonical index
 └── README.md
 ```
 

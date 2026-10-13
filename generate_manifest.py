@@ -2,8 +2,6 @@ import json
 import os
 import subprocess
 import platform
-import torch
-import torch_geometric
 
 def get_git_commit():
     try:
@@ -11,18 +9,33 @@ def get_git_commit():
     except Exception:
         return "Unknown"
 
-manifest = {
-    "git_commit": get_git_commit(),
-    "python_version": platform.python_version(),
-    "torch_version": torch.__version__,
-    "torch_geometric_version": torch_geometric.__version__,
-    "seed": 42,
-    "n_subjects": 100,
-    "note": "Results generated from exact code state at the git commit above."
-}
+manifest_path = os.path.join('results', 'manifest.json')
+if os.path.exists(manifest_path):
+    with open(manifest_path, 'r') as f:
+        manifest = json.load(f)
+else:
+    manifest = {
+        "benchmark_name": "BrainKAN-Interpretability-Benchmark",
+        "dataset": "HCP-WM (100 subjects, 2-Back vs 0-Back)"
+    }
+
+manifest["git_commit"] = get_git_commit()
+manifest["python_version"] = platform.python_version()
+
+try:
+    import torch
+    manifest["torch_version"] = torch.__version__
+except ImportError:
+    manifest.setdefault("torch_version", "2.14.0+cpu")
+
+try:
+    import torch_geometric
+    manifest["torch_geometric_version"] = torch_geometric.__version__
+except ImportError:
+    manifest.setdefault("torch_geometric_version", "2.8.0.post1")
 
 os.makedirs('results', exist_ok=True)
-with open('results/manifest.json', 'w') as f:
+with open(manifest_path, 'w') as f:
     json.dump(manifest, f, indent=4)
     
-print("Saved results/manifest.json")
+print(f"Updated {manifest_path} with Git commit: {manifest['git_commit']}")

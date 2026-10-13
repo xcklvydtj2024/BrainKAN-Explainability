@@ -5,3 +5,6 @@ artifacts/
 tectonic.zip
 tectonic/
 fix_math.py
+*.aux
+*.log
+*.out
