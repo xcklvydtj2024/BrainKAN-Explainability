@@ -29,14 +29,14 @@
 \begin{center}
     {\large \textbf{BrainKAN Research Evidence Brief: Methodological Evaluation of Learned Spline Nonlinearities}}\\[1pt]
     \textbf{Author:} Xin Qi \quad $\vert$ \quad \textbf{Production Commit SHA:} \texttt{4f6c2e8caba09fc7d0ddcda503da87f380424b3f} \\[1pt]
-    {\footnotesize \textbf{Environment:} Python 3.10.20 $\cdot$ PyTorch 2.14.0 $\cdot$ PyG 2.8.0 $\cdot$ Release: \texttt{ec779f9428db148f5d616b52a0cfa34c2eee04b7}}
+    {\footnotesize \textbf{Environment:} Python 3.10.20 $\cdot$ PyTorch 2.14.0 $\cdot$ PyG 2.8.0 $\cdot$ Release: \texttt{8218aeb1fae0b5a084266fbfedbc051c07c7e7b9}}
 \end{center}
 \vspace{-6pt}
 \hrule
 \vspace{4pt}
 
 \textbf{\large 1. Research Motivation \& Core Methodological Problem}\\[1pt]
-In graph neural networks for functional neuroimaging, Kolmogorov--Arnold Networks (KANs) parameterize message passing via learnable univariate B-splines $\Phi_{ij}(x) = \sum_{p} c_{ij,p} B_p(x)$, allowing direct visual inspection of edge-level transformations. In literature, researchers often interpret learned spline curvatures as evidence of in-vivo biological computation or task-specific cognitive mechanisms.
+In graph neural networks for functional neuroimaging, Kolmogorov--Arnold Networks (KANs) replace linear edge weights with learnable univariate B-splines $\Phi_{ij}(x) = \sum_{p} c_{ij,p} B_p(x)$, allowing direct visual inspection of edge-level transformations. In literature, researchers often interpret learned spline curvatures as evidence of in-vivo biological computation or task-specific cognitive mechanisms.
 
 \textbf{The Foundational Methodological Problem:}
 \textit{Do learned spline nonlinearities reflect task-specific information, or are they mathematical artifacts of operational metric definitions, evaluation domains, and non-convex optimization randomness?}
@@ -51,8 +51,14 @@ The benchmark evaluates a specialized 2-layer Graph Kolmogorov--Arnold Network t
 \begin{itemize}\itemsep -2pt
     \item \textbf{Layer 1 (Learnable Edge B-Splines):} For each directed functional edge $e = (u, v) \in \mathcal{E}$, message passing computes:
     $\Phi_e(x_u) = w_{\mathrm{base}, e} \cdot \operatorname{SiLU}(x_u) + \sum_{k=1}^{G+k_o} c_{e, k} B_{k, k_o}(x_u)$,
-    where $B_{k, k_o}$ denotes cubic B-spline basis functions ($k_o = 3$) parameterized over $G = 5$ grid intervals.
-    \item \textbf{Capacity Accounting:} Each of the $|E| = 240$ edges contains 7 parameters ($5$ spline coefficients $+ 1$ base weight $+ 1$ bias), totaling exactly \textbf{$1,776$ parameters} in Layer 1. The complete model contains $P = 589,779$ parameters (calibrated against matched MLP baselines).
+    where $B_{k, k_o}$ denotes cubic B-spline basis functions ($k_o = 3$) parameterized over $G = 5$ grid intervals ($G+k_o = 8$ basis functions).
+    \item \textbf{Exact Parameter Accounting:} For $|E| = 240$ edges, $C_{\mathrm{in}} = 1$, and $C_{\mathrm{out}} = 16$:
+    \begin{itemize}\itemsep -2pt
+        \item Spline coefficients: $240 \times 16 \times 1 \times 8 = \mathbf{30,720}$ parameters.
+        \item Base residual weights: $240 \times 16 \times 1 = \mathbf{3,840}$ parameters.
+        \item Root self-connections: $16 \times 1 = \mathbf{16}$ parameters.
+        \item \textbf{Layer 1 Total:} $\mathbf{34,576}$ parameters. The complete 2-layer BrainKAN model contains $P = \mathbf{589,779}$ parameters.
+    \end{itemize}
     \item \textbf{Operational Metric (Deviation-From-Linearity, DFL):} For any learned function $f$ evaluated on discrete grid $D = \{t_1, \dots, t_K\}$, DFL measures normalized variance unexplained by ordinary least-squares affine regression:
     \begin{equation*}
         \operatorname{DFL}(f; D) = \frac{\inf_{a, b} \sum_{k=1}^K |f(t_k) - (at_k + b)|^2}{\sum_{k=1}^K |f(t_k) - \bar{f}|^2} = \frac{\mathrm{SS}_{\mathrm{res}}}{\mathrm{SS}_{\mathrm{tot}}} = 1 - R^2
@@ -70,10 +76,10 @@ The benchmark evaluates a specialized 2-layer Graph Kolmogorov--Arnold Network t
 \textbf{\large 4. Core Experimental Design: Progressive Falsification Suite}\\[1pt]
 The benchmark evaluates 5 pre-committed experiments crossing input shifts with design-consistent null models:
 \begin{itemize}\itemsep -2pt
-    \item \textbf{Exp 1 (High-Precision Permutation Baseline):} Evaluates single-seed (\texttt{seed=42}) excess curvature over $N = 500$ sign-flip label permutations on the pooled quantile grid $\mathcal{S}_{\mathrm{pooled}}$.
+    \item \textbf{Exp 1 (High-Precision Permutation Baseline):} Evaluates single-seed (\texttt{seed=42}) excess curvature on whole-graph average DFL over $N = 500$ sign-flip label permutations on $\mathcal{S}_{\mathrm{pooled}}$ ($\Delta = +0.00162, p = 0.0060$). This global-graph test is distinct from the edge-level FDR test in exploratory Q3B (where 0/240 edges reached significance).
     \item \textbf{Exp 2 (Synthetic Ground-Truth Calibration):} 3-condition controlled simulation ($N = 200$) on known function $f^*(x) = x + 0.5\sin(2x)$ assessing DFL sensitivity to uniform, domain-shifted, and density-weighted grids.
     \item \textbf{Exp 3 (Reference Domain Control):} 5-fold CV on fMRI data contrasting pooled ranges against empirical common support $\mathcal{S}_{\mathrm{common}} = \operatorname{supp}(X_0) \cap \operatorname{supp}(X_1)$ to eliminate boundary extrapolation.
-    \item \textbf{Exp 4 (Capacity Calibration):} Matched-parameter comparison ($1,776$ params) against linear and MLP baselines across hidden dimensions.
+    \item \textbf{Exp 4 (Capacity Sensitivity Analysis):} Multi-seed capacity sensitivity scan across BrainKAN hidden dimensions ($d \in \{4, 8, 16\}$ across 5 random initializations), with model parameter counts reported separately.
     \item \textbf{Exp 5 (Seed-Marginalized Permutation Testing, SMPT):} Multi-seed evaluation across $S = 10$ seeds $\times$ $B = 15$ permutations under \textbf{dual estimands}: (1) Pooled Support $\mathcal{S}_{\mathrm{pooled}} = Q_{1\%-99\%}([X_0, X_1])$; (2) Strict Common Support $\mathcal{S}_{\mathrm{common}} = \operatorname{supp}(X_0) \cap \operatorname{supp}(X_1)$.
 \end{itemize}
 
@@ -98,10 +104,10 @@ The benchmark evaluates 5 pre-committed experiments crossing input shifts with d
 \toprule
 \textbf{Experiment} & \textbf{Estimand \& Target} & \textbf{Sample Budget} & \textbf{Effect Size / Statistic} & \textbf{p-value \& Uncertainty} \\
 \midrule
-\textbf{Exp 1: Permutation} & Single-seed ($s=42$) on $\mathcal{S}_{\mathrm{pooled}}$ & $N=500$ perms & $\Delta_{\mathrm{pool}} = +0.00162$ & $p = 0.0060$ ($k=2/500$). Significant conditionally. \\
+\textbf{Exp 1: Permutation} & Single-seed ($s=42$) on $\mathcal{S}_{\mathrm{pooled}}$ (whole-graph) & $N=500$ perms & $\Delta_{\mathrm{pool}} = +0.00162$ & $p = 0.0060$ ($k=2/500$). Significant conditionally at graph level. \\
 \textbf{Exp 2: Synthetic} & Grid gauge sensitivity on $f^*(x)$ & $N=200$ sims & Shifted $\Delta = +0.0816$ & $\mathrm{SD}=0.0084$ ($>40\times$ inflation purely from grid shift). \\
 \textbf{Exp 3: Common Support} & Cross-cohort transfer (HCP$\to$CHCP) & 5-fold CV & $\Delta_{\mathrm{common}} = -0.0003$ & 5-fold mean. Excess curvature collapses to zero. \\
-\textbf{Exp 4: Capacity} & BrainKAN ($1,776$p) vs. MLP ($1,776$p) & 5 seeds & Baseline $T \approx 0.179$ & Real and null models share identical capacity baseline. \\
+\textbf{Exp 4: Capacity Scan} & BrainKAN hidden dims ($d=4, 8, 16$) & 5 seeds $\times$ 3 dims & Baseline $T \approx 0.176 - 0.183$ & High test accuracy ($90\%-93\%$). Baseline stable across widths. \\
 \textbf{Exp 5: Estimand 1} & Multi-seed on Pooled Grid $\mathcal{S}_{\mathrm{pooled}}$ & $S=10$, $B=15$ & $\bar{\Delta}_{\mathrm{pool}} = \mathbf{-0.00058}$ & $95\%$ $t$-CI: $[-0.00130, +0.00013]$, $p = 0.9513$ (1/10 pos). \\
 \textbf{Exp 5: Estimand 2} & Multi-seed on Common Support $\mathcal{S}_{\mathrm{common}}$ & $S=10$, $B=15$ & $\bar{\Delta}_{\mathrm{common}} = \mathbf{+0.00090}$ & $95\%$ $t$-CI: $[+0.00051, +0.00129]$, $p = 0.0003$ (9/10 pos). \\
 \bottomrule
@@ -127,17 +133,19 @@ To preserve rigorous scientific integrity, our findings are bounded by explicit 
 \toprule
 \textbf{Component} & \textbf{Repository Script / File Path} & \textbf{Role \& Computational Output} \\
 \midrule
-\textbf{Architecture} & \nolinkurl{models/kan.py} & Layer 1 B-spline EdgeConv ($1,776$ parameters) \& BrainKAN network. \\
+\textbf{Architecture} & \nolinkurl{models/kan.py} & Layer 1 B-spline EdgeConv ($34,576$ params) \& BrainKAN ($589,779$ params). \\
+\textbf{Baselines} & \nolinkurl{models/baseline.py} & Canonical GCNBaseline (338 params) and GATBaseline (234 params). \\
+\textbf{Param Verification} & \nolinkurl{compute_baseline_params.py}, \nolinkurl{tests/test_model_parameters.py} & Analytical/runtime parameter counting script and automated test assertions. \\
 \textbf{Pairing Manifest} & \nolinkurl{data/subject_pairing_manifest.csv} & 100 paired HCP subjects with verified 5-fold CV assignments. \\
 \textbf{Exp 1 (Permutation)} & \nolinkurl{experiments/exp1_high_precision_permutation.py} & $N=500$ permutation test $\to$ \nolinkurl{results/exp1_high_precision/} \\
 \textbf{Exp 2 (Synthetic)} & \nolinkurl{experiments/exp2_synthetic_calibration.py} & Ground-truth gauge calibration $\to$ \nolinkurl{results/exp2_synthetic/} \\
 \textbf{Exp 3 (Common Support)} & \nolinkurl{experiments/exp3_reference_domain_control.py} & Domain control \& CHCP transfer $\to$ \nolinkurl{results/exp3_ref_domain/} \\
-\textbf{Exp 4 (Capacity)} & \nolinkurl{experiments/exp4_multi_seed_robustness.py} & Matched-parameter comparison $\to$ \nolinkurl{results/model_parameter_counts.csv} \\
+\textbf{Exp 4 (Capacity Scan)} & \nolinkurl{experiments/exp4_multi_seed_robustness.py} & Multi-seed hidden dim scan ($d \in \{4, 8, 16\}$) across 5 seeds. \\
 \textbf{Exp 5 (SMPT Multi-Seed)} & \nolinkurl{experiments/exp5_runner.py}, \nolinkurl{run_exp5_parallel.py} & 10-seed dual-estimand runner $\to$ \nolinkurl{results/exp5_seed_stability/} \\
 \textbf{Support Overlap Audit} & \nolinkurl{experiments/compute_support_overlap_empirical.py} & Empirical overlap for 48 ROIs $\to$ \nolinkurl{results/primary_analysis/} \\
 \textbf{Archived Pilot Runs} & \nolinkurl{results/archived_runs/pilot_unpermuted_diagnostic/} & Archived pre-test dry runs ($N_{\mathrm{perms}}=0, \mathrm{effect}=\mathrm{NaN}$). \\
 \textbf{Master Manifest} & \nolinkurl{results/manifest.json} & Git commit \texttt{4f6c2e8caba09fc7d0ddcda503da87f380424b3f} \& canonical index. \\
-\textbf{Closed Audit Report} & \nolinkurl{docs/audit_report.md} & Complete audit closure with historical tracking and resolution commits. \\
+\textbf{Closed Audit Report} & \nolinkurl{docs/audit_report.md} & Internal audit closure with historical tracking and resolution commits. \\
 \bottomrule
 \end{tabularx}
 \end{table}

@@ -28,12 +28,12 @@ To maintain clarity across project phases, the experimental progression is struc
 1. **Exploratory Characterization Phase (Q1–Q3):**
    - **Q1 / Q2 (Function Characterization & Taxonomy):** Documenting learned edge B-spline forms, non-linear heatmaps, and functional clustering stability (`q1_function_gallery.png`, `q2_cluster_stability.csv`).
    - **Q3A (Operating-Regime Sensitivity):** Naive edge-level tests under unstandardized condition inputs (`q3a_pvalues.csv`), revealing apparent widespread curvature differences caused by input domain divergence.
-   - **Q3B (Common-Reference Geometry):** Standardizing evaluation onto aligned reference domains (`q3b_null_summary.csv`), showing substantial shrinkage of naive edge differences.
+   - **Q3B (Common-Reference Geometry):** Standardizing evaluation onto aligned reference domains (`q3b_null_summary.csv`), showing substantial shrinkage of naive edge differences (0/240 edges survive FDR correction).
    - **Q3C (Effective Structural Gain & Identifiability):** Testing whether spline parameters provide structural identifiability beyond affine baselines (`q3c_final_table.csv`, `synthetic_confusability_results.csv`).
 
 2. **Formal Production Benchmark Suite (Exp 1–5):**
-   - **Exp 1 (High-Precision Permutation Test):** High-precision single-seed baseline ($N=500$, seed=42) on pooled domain.
+   - **Exp 1 (High-Precision Permutation Test):** High-precision single-seed baseline ($N=500$, seed=42) on the whole-graph average DFL ($\Delta_{\mathrm{pool}} = +0.00162, p = 0.0060$, distinct from Q3B edge-level FDR testing).
    - **Exp 2 (Synthetic Calibration):** Rigorous ground-truth sensitivity test of DFL gauge dependence.
    - **Exp 3 (Common Support Control):** Elimination of boundary extrapolation artifacts on real fMRI graphs.
-   - **Exp 4 (Capacity Calibration):** Parameter matching (1,776 params) against linear and MLP baselines.
+   - **Exp 4 (Capacity Sensitivity Scan):** Multi-seed capacity sensitivity scan across BrainKAN hidden dimensions ($d \in \{4, 8, 16\}$), with model parameter counts reported separately.
    - **Exp 5 (Multi-Seed Optimization Marginalization / SMPT):** Definitive 10-seed paired null test addressing optimization stochasticity and establishing the dual-estimand inferential boundary.

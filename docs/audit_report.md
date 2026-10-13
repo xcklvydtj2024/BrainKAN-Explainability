@@ -65,12 +65,15 @@
 ## 5. Model Parameter Calculation & Capacity Calibration
 - **Initial Status:** **PENDING**
 - **Current Status:** **RESOLVED / CLOSED (PASS)**
-- **Historical Finding:** Ensuring that the real and null models share identical parameter counts, architectures, and random seed budgets, and calibrating BrainKAN capacity against conventional GNN and MLP baselines.
+- **Historical Finding:** Ensuring that the real and null models share identical parameter counts, architectures, and random seed budgets, and calibrating BrainKAN capacity against conventional GNN baselines.
 - **Audit Verification & Resolution:**
-  1. **Layer 1 Edge Conv Parameter Matching:** Formally documented in [`results/model_parameter_counts.csv`](../results/model_parameter_counts.csv) via [`compute_baseline_params.py`](../compute_baseline_params.py):
-     - BrainKAN Layer 1 Edge Conv: $240 \text{ edges} \times (5 \text{ spline} + 1 \text{ base} + 1 \text{ bias}) = 1,776$ parameters.
-     - Parameter-Matched MLP: exactly $1,776$ parameters ($1 \times 7$ hidden per edge).
-     - Capacity-Unconstrained baseline: $5,856$ parameters.
+  1. **Layer 1 Edge Conv Parameter Accounting:** Formally documented in [`results/model_parameter_counts.csv`](../results/model_parameter_counts.csv) via [`compute_baseline_params.py`](../compute_baseline_params.py) and asserted in [`tests/test_model_parameters.py`](../tests/test_model_parameters.py):
+     - BrainKAN Layer 1 Edge Conv ($|E| = 240, C_{\mathrm{in}} = 1, C_{\mathrm{out}} = 16, G = 5, k_o = 3 \implies 8$ B-spline basis functions):
+       - Spline coefficients: $240 \times 16 \times 1 \times 8 = \mathbf{30,720}$ parameters.
+       - Base residual weights: $240 \times 16 \times 1 = \mathbf{3,840}$ parameters.
+       - Root self-connections: $16 \times 1 = \mathbf{16}$ parameters.
+       - **Layer 1 Total:** $\mathbf{34,576}$ parameters.
+     - Baseline GNN architectures unified in [`models/baseline.py`](../models/baseline.py): GCN (338 params), GAT (234 params), GCN_Large (264,706 params), GAT_Large (68,226 params).
   2. **Total Model Capacity Accounting:** The full BrainKAN network contains $P = 589,779$ parameters. With $N = 100$ subjects, $P \gg N$ ($P/N \approx 5,898$). This substantial capacity enables the network to allocate baseline curvature even on label-permuted noise ($T \approx 0.179$).
   3. **Paired Null Equivalence:** Real and null models are trained with identical architecture, identical parameter counts, and identical Adam optimizer configurations (`lr=0.005`, 15 epochs) on sign-flipped/label-permuted graphs.
   4. **Resolution Commit:** `22d378960fa051e8ad75baa7b45c3902bd354b2f` and `17565f73114343f29633e14d35b30619d728469b`.
@@ -79,12 +82,13 @@
 
 ## Production Sign-off & Audit Closure
 
-All historical audit items have been resolved and independently audited:
-1. Subject pairing is verified end-to-end with zero cross-validation leakage.
+All historical audit items have been resolved, internally audited, and supported by automated tests:
+1. Subject pairing is verified end-to-end with zero cross-validation leakage (`tests/test_pipeline_integrity.py`).
 2. Reference domains and common support intersections are strictly computed from fold training sets.
-3. Edge mapping and PyG tensor topologies are validated via automated tests.
+3. Edge mapping and PyG tensor topologies are validated via automated tests (`tests/test_edge_mapping.py`).
 4. Numerical degeneracies and fallback conditions are formally tracked (0 / 240 triggers, 0.00% degeneracy rate).
-5. Model parameters are calibrated and matched across architectures.
+5. Model parameters are verified analytically and on live modules (`tests/test_model_parameters.py`).
 6. Outdated pilot unpermuted diagnostic artifacts (`permutations: 0, effect_size: NaN, p_value: 1.0`) have been formally archived to [`results/archived_runs/pilot_unpermuted_diagnostic/`](../results/archived_runs/pilot_unpermuted_diagnostic/), providing a clean, unique entrance to canonical experimental results (`results/exp1_high_precision/`, `results/exp5_seed_stability/`).
 
-**Final Audit Verdict:** **CLEARED FOR PRODUCTION AND ACADEMIC RELEASE**
+**Final Audit Verdict:** **CLEARED FOR PRODUCTION AND ACADEMIC RELEASE (INTERNAL AUDIT WITH AUTOMATED TEST SUITE)**
+

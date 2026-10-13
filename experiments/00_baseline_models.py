@@ -9,47 +9,18 @@ import pandas as pd
 import numpy as np
 
 import sys
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(BASE_DIR)
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
 from utils_data_loading import load_real_hcp_data
 from models.kan import BrainKAN
+from models.baseline import GCNBaseline, GATBaseline
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ARTIFACTS_DIR = os.path.join(BASE_DIR, "results")
+ARTIFACTS_DIR = os.path.join(PROJECT_ROOT, "results")
 os.makedirs(ARTIFACTS_DIR, exist_ok=True)
 
-class GCNBaseline(torch.nn.Module):
-    def __init__(self, in_channels, hidden_channels):
-        super(GCNBaseline, self).__init__()
-        self.conv1 = GCNConv(in_channels, hidden_channels)
-        self.conv2 = GCNConv(hidden_channels, hidden_channels)
-        self.lin = torch.nn.Linear(hidden_channels, 2)
-
-    def forward(self, x, edge_index, batch):
-        x = self.conv1(x, edge_index)
-        x = F.relu(x)
-        x = self.conv2(x, edge_index)
-        x = F.relu(x)
-        x = global_mean_pool(x, batch)
-        x = F.dropout(x, p=0.5, training=self.training)
-        x = self.lin(x)
-        return x
-
-class GATBaseline(torch.nn.Module):
-    def __init__(self, in_channels, hidden_channels, heads=4):
-        super(GATBaseline, self).__init__()
-        self.conv1 = GATConv(in_channels, hidden_channels, heads=heads)
-        self.conv2 = GATConv(hidden_channels * heads, hidden_channels, heads=1)
-        self.lin = torch.nn.Linear(hidden_channels, 2)
-
-    def forward(self, x, edge_index, batch):
-        x = self.conv1(x, edge_index)
-        x = F.relu(x)
-        x = self.conv2(x, edge_index)
-        x = F.relu(x)
-        x = global_mean_pool(x, batch)
-        x = F.dropout(x, p=0.5, training=self.training)
-        x = self.lin(x)
-        return x
 
 def train_and_eval(model_class, dataset_pairs, epochs=15):
     kf = KFold(n_splits=5, shuffle=True, random_state=42)

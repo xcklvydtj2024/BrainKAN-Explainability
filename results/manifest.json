@@ -1,15 +1,16 @@
 {
     "benchmark_name": "BrainKAN-Interpretability-Benchmark",
-    "git_commit": "ec779f9428db148f5d616b52a0cfa34c2eee04b7",
+    "git_commit": "4f6c2e8caba09fc7d0ddcda503da87f380424b3f",
+    "release_commit": "8218aeb1fae0b5a084266fbfedbc051c07c7e7b9",
     "dataset": "HCP-WM (100 subjects, 2-Back vs 0-Back)",
-    "python_version": "3.13.5",
+    "python_version": "3.10.20",
     "torch_version": "2.14.0+cpu",
     "torch_geometric_version": "2.8.0.post1",
     "canonical_result_directories": {
         "exp1_high_precision": "results/exp1_high_precision",
         "exp2_synthetic_calibration": "results/exp2_synthetic",
         "exp3_common_support_control": "results/exp3_ref_domain",
-        "exp4_capacity_calibration": "results/exp4_multi_seed",
+        "exp4_capacity_scan": "results/exp4_multi_seed",
         "exp5_seed_marginalization": "results/exp5_seed_stability",
         "empirical_support_audit": "results/primary_analysis/node_support_overlap_stats.csv",
         "archived_pilot_diagnostic_runs": "results/archived_runs/pilot_unpermuted_diagnostic"
@@ -21,9 +22,9 @@
             "t_real": 0.17895,
             "t_null_mean": 0.17733,
             "delta_task": 0.00162,
-            "p_value": 0.006,
+            "p_value": 0.0060,
             "output_directory": "results/exp1_high_precision",
-            "note": "Conditional significance for seed 42 on pooled grid. Does not generalize across optimization randomness."
+            "note": "Conditional significance for seed 42 on pooled grid across full-graph average DFL. Distinct from exploratory Q3B edge-level FDR test."
         },
         "exp2_synthetic_calibration": {
             "n_simulations": 200,
@@ -40,29 +41,21 @@
             "output_directory": "results/exp3_ref_domain",
             "note": "5-fold cross-validation showing common support difference is indistinguishable from zero."
         },
+        "exp4_capacity_scan": {
+            "seeds": [42, 100, 2023, 888, 777],
+            "hidden_dims": [4, 8, 16],
+            "output_directory": "results/exp4_multi_seed",
+            "note": "Multi-seed capacity sensitivity analysis across BrainKAN hidden dimensions, showing baseline curvature remains stable at T ≈ 0.18 across widths. Parameter counts reported separately in model_parameter_counts.csv."
+        },
         "exp5_seed_marginalization": {
             "n_seeds": 10,
-            "seeds_evaluated": [
-                42,
-                100,
-                777,
-                888,
-                1234,
-                1337,
-                2023,
-                2048,
-                5678,
-                9999
-            ],
+            "seeds_evaluated": [42, 100, 777, 888, 1234, 1337, 2023, 2048, 5678, 9999],
             "output_directory": "results/exp5_seed_stability",
             "estimand_1_pooled_support": {
                 "marginal_t_real": 0.17939,
                 "marginal_t_null": 0.17998,
                 "marginal_delta": -0.00058,
-                "ci_95_student_t": [
-                    -0.0013,
-                    0.00013
-                ],
+                "ci_95_student_t": [-0.00130, 0.00013],
                 "t_statistic": -1.8493,
                 "positives": "1/10 (Seed 42 only)",
                 "p_value_one_sided": 0.9513,
@@ -71,11 +64,8 @@
             "estimand_2_strict_common_support": {
                 "marginal_t_real": 0.08595,
                 "marginal_t_null": 0.08505,
-                "marginal_delta": 0.0009,
-                "ci_95_student_t": [
-                    0.00051,
-                    0.00129
-                ],
+                "marginal_delta": 0.00090,
+                "ci_95_student_t": [0.00051, 0.00129],
                 "t_statistic": 5.1862,
                 "positives": "9/10",
                 "p_value_one_sided": 0.0003,
