@@ -1,5 +1,5 @@
 import math
-from typing import Optional
+from typing import Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -159,6 +159,43 @@ class EdgeSpecificKANConv(MessagePassing):
             
         return msg
 
+    def compute_curvature_penalty(
+        self, num_points: int = 50, grid_range: Optional[Tuple[float, float]] = None
+    ) -> torch.Tensor:
+        """Computes the second-derivative roughness penalty \\int |f''(t)|^2 dt across edges."""
+        device = self.spline_weight.device
+        if grid_range is not None:
+            t_min, t_max = grid_range
+        else:
+            t_min = self.grid[0, 0, self.spline_order].item()
+            t_max = self.grid[0, 0, -(self.spline_order + 1)].item()
+
+        t = torch.linspace(t_min, t_max, num_points, device=device)
+        h = (t_max - t_min) / (num_points - 1)
+        probe_inputs = t.unsqueeze(1)
+
+        if self.in_channels == 1:
+            grid0 = self.grid[0].unsqueeze(0).expand(num_points, -1, -1)
+            basis = _b_spline_basis(probe_inputs, grid0, self.spline_order)
+            base_out = torch.einsum("mi,eoi->emo", F.silu(probe_inputs), self.base_weight)
+            spline_out = torch.einsum("mib,eoib->emo", basis, self.spline_weight)
+            f_vals = base_out + spline_out
+            d2 = (f_vals[:, 2:, :] - 2 * f_vals[:, 1:-1, :] + f_vals[:, :-2, :]) / (h ** 2)
+            curv = (d2 ** 2).sum(dim=1) * h
+            return curv.mean()
+        else:
+            penalties = []
+            for i in range(self.in_channels):
+                grid_i = self.grid[0, i : i + 1].unsqueeze(0).expand(num_points, -1, -1)
+                basis_i = _b_spline_basis(probe_inputs, grid_i, self.spline_order)
+                base_i = torch.einsum("m,eo->emo", F.silu(t), self.base_weight[:, :, i])
+                spline_i = torch.einsum("mb,eob->emo", basis_i[:, 0, :], self.spline_weight[:, :, i, :])
+                f_i = base_i + spline_i
+                d2_i = (f_i[:, 2:, :] - 2 * f_i[:, 1:-1, :] + f_i[:, :-2, :]) / (h ** 2)
+                curv_i = (d2_i ** 2).sum(dim=1) * h
+                penalties.append(curv_i.mean())
+            return torch.stack(penalties).mean()
+
 
 class BrainKAN(nn.Module):
     """
@@ -220,3 +257,14 @@ class BrainKAN(nn.Module):
 
         h_graph = self.readout(x, batch)
         return self.classifier(h_graph)
+
+    def compute_curvature_penalty(
+        self, num_points: int = 50, grid_range: Optional[Tuple[float, float]] = None, layer: str = "conv1"
+    ) -> torch.Tensor:
+        """Computes edge curvature roughness penalty \\int |f''(t)|^2 dt."""
+        if layer == "conv1":
+            return self.conv1.compute_curvature_penalty(num_points, grid_range)
+        elif layer == "all":
+            return self.conv1.compute_curvature_penalty(num_points, grid_range) + self.conv2.compute_curvature_penalty(num_points, grid_range)
+        else:
+            raise ValueError(f"Unknown layer {layer}, expected 'conv1' or 'all'")
