@@ -50,3 +50,14 @@ def test_decompose_hierarchical_variance():
     decomp = decompose_hierarchical_variance(seed_estimates, subject_boot_estimates)
     assert decomp["var_total_decoupled"] == decomp["var_subject_population"] + decomp["var_optimization_seed"]
     assert np.isclose(decomp["pct_population_variance"] + decomp["pct_optimization_variance"], 100.0)
+
+
+def test_multi_seed_permutation_inference_runner():
+    """Verify that hierarchical_inference_runner executes and produces valid summary output."""
+    from experiments.hierarchical_inference_runner import run_hierarchical_inference
+    summary_df = run_hierarchical_inference(n_permutations=500)
+    assert summary_df["Primary_Target"].iloc[0] == "Label_Blind_Training_Fold_Domain"
+    assert summary_df["n_seeds"].iloc[0] == 10
+    assert summary_df["n_permutations"].iloc[0] == 500
+    assert 0.0 <= summary_df["perm_empirical_pvalue"].iloc[0] <= 1.0
+    assert summary_df["synthetic_bootstrap_status"].iloc[0] == "REMOVED_IN_FAVOR_OF_RIGOR"

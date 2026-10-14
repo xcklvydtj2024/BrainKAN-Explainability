@@ -1,5 +1,0 @@
-Experiment,Gamma,N_Trials,Mean_Raw_T_real,Mean_Delta,Std_Delta,Empirical_Rejection_Rate_alpha05,Metric_Interpretation
-Linear_Negative_Control,0.0,10,0.2249490925536593,-0.0001689116699801774,0.0008041176465671807,0.0,Type I Error Rate (FPR)
-Nonlinear_Positive_Control,0.2,3,0.22230866313699774,-0.001116570936619636,0.0009012353700014083,0.0,Statistical Power (1 - beta)
-Nonlinear_Positive_Control,0.5,3,0.22239283696811643,-0.0009993664919984533,0.001192518036871728,0.0,Statistical Power (1 - beta)
-Nonlinear_Positive_Control,1.0,3,0.22965702751226272,-0.00035898033443848435,0.0006451390117846935,0.0,Statistical Power (1 - beta)

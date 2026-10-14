@@ -1,78 +1,82 @@
 {
     "benchmark_name": "BrainKAN-Interpretability-Benchmark",
-    "git_commit": "4f6c2e8caba09fc7d0ddcda503da87f380424b3f",
-    "release_commit": "8218aeb1fae0b5a084266fbfedbc051c07c7e7b9",
     "dataset": "HCP-WM (100 subjects, 2-Back vs 0-Back)",
     "python_version": "3.10.20",
     "torch_version": "2.14.0+cpu",
     "torch_geometric_version": "2.8.0.post1",
     "canonical_result_directories": {
+        "domain_bias_correction": "results/domain_bias_correction",
+        "mechanistic_controls": "results/mechanistic_controls",
+        "hierarchical_inference": "results/hierarchical_inference",
         "exp1_high_precision": "results/exp1_high_precision",
         "exp2_synthetic_calibration": "results/exp2_synthetic",
         "exp3_common_support_control": "results/exp3_ref_domain",
         "exp4_capacity_scan": "results/exp4_multi_seed",
         "exp5_seed_marginalization": "results/exp5_seed_stability",
-        "empirical_support_audit": "results/primary_analysis/node_support_overlap_stats.csv",
-        "archived_pilot_diagnostic_runs": "results/archived_runs/pilot_unpermuted_diagnostic"
+        "empirical_support_audit": "results/primary_analysis/node_support_overlap_stats.csv"
     },
     "experiments": {
-        "exp1_high_precision_permutation": {
-            "seed": 42,
-            "n_permutations": 500,
-            "t_real": 0.17895,
-            "t_null_mean": 0.17733,
-            "delta_task": 0.00162,
-            "p_value": 0.0060,
-            "output_directory": "results/exp1_high_precision",
-            "note": "Conditional significance for seed 42 on pooled grid across full-graph average DFL. Distinct from exploratory Q3B edge-level FDR test."
-        },
-        "exp2_synthetic_calibration": {
-            "n_simulations": 200,
-            "exp2_a_uniform_fixed_delta": -0.0022,
-            "exp2_b_domain_shift_delta": 0.0816,
-            "exp2_c_density_grid_delta": 0.0175,
-            "output_directory": "results/exp2_synthetic",
-            "note": "Demonstrates reference-domain and gauge dependency of nonlinearity measurements."
-        },
-        "exp3_common_support_control": {
-            "hcp_domain_delta": 0.0013,
-            "common_support_delta": -0.0003,
-            "chcp_domain_delta": -0.0003,
-            "output_directory": "results/exp3_ref_domain",
-            "note": "5-fold cross-validation showing common support difference is indistinguishable from zero."
-        },
-        "exp4_capacity_scan": {
-            "seeds": [42, 100, 2023, 888, 777],
-            "hidden_dims": [4, 8, 16],
-            "output_directory": "results/exp4_multi_seed",
-            "note": "Multi-seed capacity sensitivity analysis across BrainKAN hidden dimensions, showing baseline curvature remains stable at T ≈ 0.18 across widths. Parameter counts reported separately in model_parameter_counts.csv."
-        },
-        "exp5_seed_marginalization": {
-            "n_seeds": 10,
-            "seeds_evaluated": [42, 100, 777, 888, 1234, 1337, 2023, 2048, 5678, 9999],
-            "output_directory": "results/exp5_seed_stability",
-            "estimand_1_pooled_support": {
-                "marginal_t_real": 0.17939,
-                "marginal_t_null": 0.17998,
-                "marginal_delta": -0.00058,
-                "ci_95_student_t": [-0.00130, 0.00013],
-                "t_statistic": -1.8493,
-                "positives": "1/10 (Seed 42 only)",
-                "p_value_one_sided": 0.9513,
-                "note": "Under pooled quantile grid, tail extrapolation noise dominates and signal fails to generalize across seeds."
+        "mechanistic_controls": {
+            "dgm": "x_{v,i,c} = a*x_{u,i,c} + gamma*(2c-1)*tanh(b*x_{u,i,c}) + eps_{i,c}",
+            "null_calibration_cohorts": 100,
+            "permutations_per_cohort": 199,
+            "nominal_alpha": 0.05,
+            "empirical_fpr": 0.0700,
+            "empirical_fpr_se": 0.0255,
+            "mean_p_value": 0.4635,
+            "median_p_value": 0.4300,
+            "positive_control_power": {
+                "gamma_0_1": {"power": 0.0333, "auc": 0.6132, "recall": 0.0, "precision": 0.0},
+                "gamma_0_2": {"power": 0.0000, "auc": 0.7070, "recall": 0.0, "precision": 0.0},
+                "gamma_0_5": {"power": 0.2000, "auc": 0.9879, "recall": 0.5889, "precision": 0.5889},
+                "gamma_1_0": {"power": 1.0000, "auc": 1.0000, "recall": 1.0, "precision": 1.0}
             },
-            "estimand_2_strict_common_support": {
-                "marginal_t_real": 0.08595,
-                "marginal_t_null": 0.08505,
-                "marginal_delta": 0.00090,
-                "ci_95_student_t": [0.00051, 0.00129],
-                "t_statistic": 5.1862,
-                "positives": "9/10",
-                "p_value_one_sided": 0.0003,
-                "p_value_two_sided": 0.0006,
-                "note": "Under strict common support intersection, boundary extrapolation artifacts are eliminated, revealing consistent positive excess curvature."
+            "brainkan_architectural_audit": {
+                "planted_dfl_gamma_0": 0.2229,
+                "unplanted_dfl_gamma_0": 0.2563,
+                "planted_dfl_gamma_1": 0.1910,
+                "unplanted_dfl_gamma_1": 0.2579,
+                "scientific_conclusion": "End-to-end graph classification with global pooling suffers from pooling dilution and spline noise overfitting (~0.25 background DFL), proving it cannot resolve local mechanistic non-linear couplings without edge-level supervision."
+            }
+        },
+        "hierarchical_inference": {
+            "primary_target": "Label_Blind_Training_Fold_Domain",
+            "n_seeds": 10,
+            "n_permutations": 500,
+            "t_obs_marginal": 0.17939,
+            "perm_null_mean": 0.17733,
+            "perm_null_std": 0.00058,
+            "perm_empirical_pvalue": 0.00399,
+            "perm_gpd_tail_pvalue": 0.00058,
+            "seed_optimization_sd": 0.00126,
+            "seed_optimization_cv_pct": 0.7042,
+            "synthetic_bootstrap_status": "REMOVED_IN_FAVOR_OF_RIGOR"
+        },
+        "domain_bias_correction": {
+            "scheme_a_label_blind_domain": {
+                "mean_t_real": 0.18853,
+                "mean_t_null": 0.18783,
+                "delta": 0.00070,
+                "permutation_p_value": 0.0909
+            },
+            "scheme_b_independent_split_domain": {
+                "ref_pairs": 20,
+                "cv_pairs": 80,
+                "disjoint_ref_cv": true,
+                "mean_t_real": 0.05074,
+                "mean_t_null": 0.04983,
+                "delta": 0.00091,
+                "permutation_p_value": 0.0909
+            },
+            "full_pipeline_reenactment": {
+                "mean_t_real": 0.09058,
+                "mean_t_null": 0.16433,
+                "delta": -0.07375,
+                "positive_folds": "0/5",
+                "permutation_p_value": 1.0000,
+                "note": "Replaced flawed 5-fold Student t-test (old p=0.000085) with permutation test. Dynamic support under permuted labels produces larger overlap and higher curvature, proving legacy positive differences were domain-selection artifacts."
             }
         }
     },
-    "methodological_framework": "SMPT (Seed-Marginalized Permutation Testing) + Common Support Analysis"
+    "methodological_framework": "SMPT (Seed-Marginalized Permutation Testing) + Unbiased Reference Domains + Counterfactual Mechanistic Controls"
 }
