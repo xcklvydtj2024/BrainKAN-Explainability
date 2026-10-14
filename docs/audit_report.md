@@ -36,8 +36,8 @@
 - **Current Status:** **RESOLVED / CLOSED (PASS)**
 - **Historical Finding (`T_RANGE` Leak):** Early exploratory scripts hardcoded `T_RANGE = (-8.0, 12.0)` based on global empirical min/max range $[-6.6, 11.8]$. Deriving evaluation grids from the entire dataset constituted potential information leakage from the test set into the reference domain definition.
 - **Audit Verification & Resolution:**
-  1. **Dynamic Training-Fold Extraction:** In modern production scripts (`07_primary_statistical_analysis.py`, `exp1_high_precision_permutation.py`, and `exp5_runner.py`), the reference domain $\mathcal{R}_k$ is computed dynamically inside each cross-validation fold using **only** the training subjects of that specific fold (`t_min, t_max = train_features.min(), train_features.max()`). Test fold features are never accessed during domain construction.
-  2. **Common Support Bounding:** In Exp 3 (`exp3_reference_domain_control.py`) and Exp 5 (`exp5_seed_stability.py`), the benchmark further introduced the strict common support intersection ($\mathcal{S}_{\mathrm{common}} = \operatorname{supp}(X_0) \cap \operatorname{supp}(X_1)$), completely eliminating tail extrapolation artifacts while preserving strict within-fold isolation.
+  1. **Dynamic Training-Fold Extraction:** In modern production scripts (`07_primary_statistical_analysis.py`, `exp1_high_precision_permutation.py`, and `exp5_runner.py`), the reference domain $`\mathcal{R}_k`$ is computed dynamically inside each cross-validation fold using **only** the training subjects of that specific fold (`t_min, t_max = train_features.min(), train_features.max()`). Test fold features are never accessed during domain construction.
+  2. **Common Support Bounding:** In Exp 3 (`exp3_reference_domain_control.py`) and Exp 5 (`exp5_seed_stability.py`), the benchmark further introduced the strict common support intersection ($`\mathcal{S}_{\mathrm{common}} = \operatorname{supp}(X_0) \cap \operatorname{supp}(X_1)`$), completely eliminating tail extrapolation artifacts while preserving strict within-fold isolation.
   3. **Resolution Commit:** `ab4b4aef6b0105eb638b79007ceffe1c670e7b0c` and `17565f73114343f29633e14d35b30619d728469b`.
 
 ---
@@ -54,10 +54,10 @@
 ## 4. Exception Handling Masking (`ValueError`) & Numerical Degeneracy
 - **Initial Status:** **FAIL** (Requires Fix)
 - **Current Status:** **RESOLVED / CLOSED (PASS)**
-- **Historical Finding:** In legacy script `01_q1_q2_q3a_naive_analysis.py`, there was a `try... except ValueError: p_values[e] = 1.0` block when computing Wilcoxon signed-rank tests. While nominally conservative, catching generic `ValueError` masked potential numerical degeneracies or constant functions ($\mathrm{SS}_{\mathrm{tot}} = 0$).
+- **Historical Finding:** In legacy script `01_q1_q2_q3a_naive_analysis.py`, there was a `try... except ValueError: p_values[e] = 1.0` block when computing Wilcoxon signed-rank tests. While nominally conservative, catching generic `ValueError` masked potential numerical degeneracies or constant functions ($`\mathrm{SS}_{\mathrm{tot}} = 0`$).
 - **Audit Verification & Resolution:**
-  1. **Explicit Degeneracy Tracking:** Modern evaluation routines (`exp1_high_precision_permutation.py`, `exp5_runner.py`) removed blind exception swallowing. Constant or near-constant functions ($\mathrm{SS}_{\mathrm{tot}} < 10^{-6}$) are explicitly checked, logged, and counted via `degeneracy_count`.
-  2. **Fallback Numerical Guard Audit:** The common support boundary condition `if c_min >= c_max:` was audited across all 5 cross-validation folds and all 48 cortical ROIs ($5 \times 48 = 240$ instances). The empirical fallback occurred in **$0 / 240$ instances ($0.00\%$)**. In 100% of cases, non-empty condition intersections existed and were evaluated directly without fallback substitution.
+  1. **Explicit Degeneracy Tracking:** Modern evaluation routines (`exp1_high_precision_permutation.py`, `exp5_runner.py`) removed blind exception swallowing. Constant or near-constant functions ($`\mathrm{SS}_{\mathrm{tot}} < 10^{-6}`$) are explicitly checked, logged, and counted via `degeneracy_count`.
+  2. **Fallback Numerical Guard Audit:** The common support boundary condition `if c_min >= c_max:` was audited across all 5 cross-validation folds and all 48 cortical ROIs (5 × 48 = 240 instances). The empirical fallback occurred in **0 / 240 instances (0.00%)**. In 100% of cases, non-empty condition intersections existed and were evaluated directly without fallback substitution.
   3. **Resolution Commit:** `ab4b4aef6b0105eb638b79007ceffe1c670e7b0c` and `c2a444d5a975ed6d2379c907abfe355d0c3e539b`.
 
 ---
@@ -69,10 +69,10 @@
 - **Audit Verification & Resolution:**
   1. **Layer 1 Edge Conv Parameter Accounting:** Formally documented in [`results/model_parameter_counts.csv`](../results/model_parameter_counts.csv) via [`compute_baseline_params.py`](../compute_baseline_params.py) and asserted in [`tests/test_model_parameters.py`](../tests/test_model_parameters.py):
      - BrainKAN Layer 1 Edge Conv ($|E| = 240, C_{\mathrm{in}} = 1, C_{\mathrm{out}} = 16, G = 5, k_o = 3 \implies 8$ B-spline basis functions):
-       - Spline coefficients: $240 \times 16 \times 1 \times 8 = \mathbf{30,720}$ parameters.
-       - Base residual weights: $240 \times 16 \times 1 = \mathbf{3,840}$ parameters.
-       - Root self-connections: $16 \times 1 = \mathbf{16}$ parameters.
-       - **Layer 1 Total:** $\mathbf{34,576}$ parameters.
+        - Spline coefficients: 240 × 16 × 1 × 8 = **30,720** parameters.
+        - Base residual weights: 240 × 16 × 1 = **3,840** parameters.
+        - Root self-connections: 16 × 1 = **16** parameters.
+        - **Layer 1 Total:** **34,576** parameters.
      - Baseline GNN architectures unified in [`models/baseline.py`](../models/baseline.py): GCN (338 params), GAT (234 params), GCN_Large (264,706 params), GAT_Large (68,226 params).
   2. **Total Model Capacity Accounting:** The full BrainKAN network contains $P = 589,779$ parameters. With $N = 100$ subjects, $P \gg N$ ($P/N \approx 5,898$). This substantial capacity enables the network to allocate baseline curvature even on label-permuted noise ($T \approx 0.179$).
   3. **Paired Null Equivalence:** Real and null models are trained with identical architecture, identical parameter counts, and identical Adam optimizer configurations (`lr=0.005`, 15 epochs) on sign-flipped/label-permuted graphs.

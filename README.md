@@ -35,35 +35,38 @@ Multiple Seeds (S ≥ 10)  ──>  Common Support Bounding  ──>  Paired Per
 ```
 
 ### Three Rules for Reliable Non-linear Interpretability:
-1. **Common Support Bounding**: Evaluate spline curvature strictly on the overlapping support ($\mathcal{S}_{\mathrm{common}} = \operatorname{supp}(X_0) \cap \operatorname{supp}(X_1)$) to prevent extrapolation artifacts.
+1. **Common Support Bounding**: Evaluate spline curvature strictly on the overlapping support ($`\mathcal{S}_{\mathrm{common}} = \operatorname{supp}(X_0) \cap \operatorname{supp}(X_1)`$) to prevent extrapolation artifacts.
 2. **Paired Topology-Preserving Null Models**: Construct empirical null distributions by permuting labels while preserving graph topology and hyperparameter budgets.
 3. **Optimization Marginalization**: Define the target estimand as the marginal expectation across optimization seeds:
-   $$\bar{\Delta} = \mathbb{E}_{s \sim \mathcal{S}} \left[ T(Y; s) - \mathbb{E}_\pi [T(\pi(Y); s)] \right]$$
+
+$$
+\bar{\Delta} = \mathbb{E}_{s \sim \mathcal{S}} \left[ T(Y; s) - \mathbb{E}_\pi [T(\pi(Y); s)] \right]
+$$
 
 ---
 
 ## 🔬 Research Questions & Benchmark Results
 
 ### Q1. Are spline nonlinearities invariant to evaluation domains?
-**Answer: No.** Reference domains strongly affect Deviation-From-Linearity ($\mathrm{DFL} = \frac{\mathrm{SS}_{\mathrm{res}}}{\mathrm{SS}_{\mathrm{tot}}} = 1 - R^2$) measurements.
-* In synthetic controls (Exp 2-B), evaluating the **exact same learned model** (fitted to $f^*(x) = x + 0.5\sin(2x)$) over a shifted interval inflated apparent DFL by **$+0.0816 \pm 0.0084$** (>40× larger than real model differences).
-* Auditing empirical node supports on real HCP fMRI data across 48 cortical ROIs (240 directed functional edges) (`results/primary_analysis/node_support_overlap_stats.csv`) shows a mean cohort-aggregated condition Jaccard overlap of **$38.52\% \pm 5.08\%$** between 0-Back and 2-Back conditions (covering $43.47\%$ of the pooled quantile span).
+**Answer: No.** Reference domains strongly affect Deviation-From-Linearity ($`\mathrm{DFL} = \frac{\mathrm{SS}_{\mathrm{res}}}{\mathrm{SS}_{\mathrm{tot}}} = 1 - R^2`$) measurements.
+* In synthetic controls (Exp 2-B), evaluating the **exact same learned model** (fitted to $`f^*(x) = x + 0.5\sin(2x)`$) over a shifted interval inflated apparent DFL by **+0.0816 ± 0.0084** (>40× larger than real model differences).
+* Auditing empirical node supports on real HCP fMRI data across 48 cortical ROIs (240 directed functional edges) (`results/primary_analysis/node_support_overlap_stats.csv`) shows a mean cohort-aggregated condition Jaccard overlap of **38.52% ± 5.08%** between 0-Back and 2-Back conditions (covering 43.47% of the pooled quantile span).
 * Bounding evaluations to the Common Support eliminates these extrapolation artifacts (Exp 3).
 
 ### Q2. Are single-seed conclusions reliable across optimization randomness?
 **Answer: No. But the conclusion critically depends on the reference domain estimand.**
-* **Estimand 1 — Pooled Reference Domain ($\mathcal{S}_{\mathrm{pooled}}$)**:
-  * Under a single default initialization (`seed=42`, $N=500$ permutations in Exp 1), the model exhibited statistically significant excess nonlinearity ($\Delta_{\mathrm{pool}} = +0.00162$, $p = 0.00599 \approx 0.0060$). In Exp 5's 15-permutation screening, Seed 42 yielded $\Delta = +0.00172$.
-  * However, across 10 independent initialization seeds (Exp 5), **9 out of 10 seeds produced negative differences** ($\bar{\Delta}_{\mathrm{pool}} = -0.00058$, Student's $t$ 95% CI $[-0.00130, +0.00013]$, $p = 0.9513$). Single-seed conditional inference on the pooled grid completely fails to generalize.
-* **Estimand 2 — Strict Common Support Intersection ($\mathcal{S}_{\mathrm{common}} = \operatorname{supp}(X_0) \cap \operatorname{supp}(X_1)$)**:
+* **Estimand 1 — Pooled Reference Domain ($`\mathcal{S}_{\mathrm{pooled}}`$)**:
+  * Under a single default initialization (`seed=42`, $`N=500`$ permutations in Exp 1), the model exhibited statistically significant excess nonlinearity ($`\Delta_{\mathrm{pool}} = +0.00162`$, $`p = 0.00599 \approx 0.0060`$). In Exp 5's 15-permutation screening, Seed 42 yielded $`\Delta = +0.00172`$.
+  * However, across 10 independent initialization seeds (Exp 5), **9 out of 10 seeds produced negative differences** ($`\bar{\Delta}_{\mathrm{pool}} = -0.00058`$, Student's $`t`$ 95% CI $[-0.00130, +0.00013]$, $`p = 0.9513`$). Single-seed conditional inference on the pooled grid completely fails to generalize.
+* **Estimand 2 — Strict Common Support Intersection ($`\mathcal{S}_{\mathrm{common}} = \operatorname{supp}(X_0) \cap \operatorname{supp}(X_1)`$)**:
   * When evaluations are strictly restricted to the overlapping support, boundary extrapolation noise is filtered out.
-  * Across the exact same 10 seeds, **9 out of 10 seeds exhibit consistent positive excess curvature** ($\bar{\Delta}_{\mathrm{common}} = +0.00090 \pm 0.00055$, Student's $t$ 95% CI $[+0.00051, +0.00129]$, $t = 5.186$, $p = 0.0003$).
+  * Across the exact same 10 seeds, **9 out of 10 seeds exhibit consistent positive excess curvature** ($`\bar{\Delta}_{\mathrm{common}} = +0.00090 \pm 0.00055`$, Student's $`t`$ 95% CI $[+0.00051, +0.00129]$, $`t = 5.186`$, $`p = 0.0003`$).
 
 ### Q3. What is the evidence for task-associated excess nonlinearity across initializations?
 **Answer: Under strict common support, a positive difference is observed consistently across 9/10 tested initializations, but with specific methodological boundary conditions.**
-* **Baseline Allocation:** BrainKAN models allocate a substantial baseline curvature ($T \approx 0.179$ on pooled range; $T \approx 0.086$ on common support) attributable to architectural capacity.
-* **Pooled Grid Behavior:** On the pooled range, extrapolation artifacts dominate, yielding negative differences for 9/10 seeds ($\bar{\Delta}_{\mathrm{pool}} = -0.00058$, $p = 0.9513$).
-* **Common Support Consistency:** Under the strict common support grid, in the fixed benchmark cohort and training configuration across the 15 shared permutation vectors, 9 out of 10 initialization seeds exhibit a positive DFL difference ($\bar{\Delta}_{\mathrm{common}} = +0.00090 \pm 0.00055$, paired $t = 5.186, p = 0.0003$).
+* **Baseline Allocation:** BrainKAN models allocate a substantial baseline curvature ($`T \approx 0.179`$ on pooled range; $`T \approx 0.086`$ on common support) attributable to architectural capacity.
+* **Pooled Grid Behavior:** On the pooled range, extrapolation artifacts dominate, yielding negative differences for 9/10 seeds ($`\bar{\Delta}_{\mathrm{pool}} = -0.00058`$, $`p = 0.9513`$).
+* **Common Support Consistency:** Under the strict common support grid, in the fixed benchmark cohort and training configuration across the 15 shared permutation vectors, 9 out of 10 initialization seeds exhibit a positive DFL difference ($`\bar{\Delta}_{\mathrm{common}} = +0.00090 \pm 0.00055`$, paired $`t = 5.186`$, $`p = 0.0003`$).
 * **Essential Methodological Limitations:**
   1. *Optimization Scope:* This reflects initialization consistency conditioned on fixed data and training settings; it does not claim generalizability to unseen subject populations or clinical cohorts.
   2. *Shared Permutations:* The 10 seeds share the same 15 permutation flip vectors, leaving common baseline uncertainty unmodeled across seeds.
@@ -72,10 +75,10 @@ Multiple Seeds (S ≥ 10)  ──>  Common Support Bounding  ──>  Paired Per
 ### 🗺️ Methodological Mapping: Exploratory Protocol (Q3A–C) to Formal Benchmark Suite (Exp 1–5)
 | Exploratory Protocol | Core Question | Production Benchmark Realization | Empirical Outcome |
 | :--- | :--- | :--- | :--- |
-| **Q3A (Operating-Regime Sensitivity)** | Does apparent curvature differ under unstandardized input regimes? | **Exp 2** (Synthetic Calibration) & **Exp 3** (Reference Domain Control) | Falsified as artifactual: domain shifts inflate apparent DFL by $+0.0816$ (>40× real differences). |
-| **Q3B (Common-Reference Geometry)** | Does structural nonlinearity persist on an aligned intra-fold reference domain? | **Exploratory Q3B**: Edge-level FDR test.<br>**Exp 1**: Scaled to whole-graph average DFL permutation test ($N=500$, Seed 42). | **Edge-Level (Q3B)**: 0/240 edges survive FDR ($p_{\mathrm{fdr}} \ge 0.79$).<br>**Global Average (Exp 1)**: Conditional significance ($\Delta = +0.00162, p = 0.0060$). |
-| **Q3C / Exp 4 (Capacity Sensitivity)** | Does edge nonlinearity provide genuine structural identifiability, and how does capacity affect it? | **Exp 4** (Multi-seed capacity sensitivity scan across BrainKAN hidden dims $d \in \{4, 8, 16\}$) | High accuracy ($90\%-93\%$) and stable baseline curvature ($T \approx 0.18$) across widths; model parameter counts reported separately. |
-| **Synthesis $\longrightarrow$ Exp 5** | Does task excess curvature generalize across optimization randomness? | **Exp 5** (Multi-Seed SMPT, $S=10$ Seeds $\times$ $15$ Permutations, Dual Estimands) | **Pooled Domain:** $\bar{\Delta}_{\mathrm{pool}} = -0.00058$ ($p = 0.9513$, 9/10 negative).<br>**Common Support:** $\bar{\Delta}_{\mathrm{common}} = +0.00090$ ($p = 0.0003$, 9/10 positive). |
+| **Q3A (Operating-Regime Sensitivity)** | Does apparent curvature differ under unstandardized input regimes? | **Exp 2** (Synthetic Calibration) & **Exp 3** (Reference Domain Control) | Falsified as artifactual: domain shifts inflate apparent DFL by +0.0816 (>40× real differences). |
+| **Q3B (Common-Reference Geometry)** | Does structural nonlinearity persist on an aligned intra-fold reference domain? | **Exploratory Q3B**: Edge-level FDR test.<br>**Exp 1**: Scaled to whole-graph average DFL permutation test ($`N=500`$, Seed 42). | **Edge-Level (Q3B)**: 0/240 edges survive FDR ($`p_{\mathrm{fdr}} \ge 0.79`$).<br>**Global Average (Exp 1)**: Conditional significance ($`\Delta = +0.00162`$, $`p = 0.0060`$). |
+| **Q3C / Exp 4 (Capacity Sensitivity)** | Does edge nonlinearity provide genuine structural identifiability, and how does capacity affect it? | **Exp 4** (Multi-seed capacity sensitivity scan across BrainKAN hidden dims $`d \in \{4, 8, 16\}`$) | High accuracy (90%–93%) and stable baseline curvature ($`T \approx 0.18`$) across widths; model parameter counts reported separately. |
+| **Synthesis → Exp 5** | Does task excess curvature generalize across optimization randomness? | **Exp 5** (Multi-Seed SMPT, 10 Seeds × 15 Permutations, Dual Estimands) | **Pooled Domain:** $`\bar{\Delta}_{\mathrm{pool}} = -0.00058`$ ($`p = 0.9513`$, 9/10 negative).<br>**Common Support:** $`\bar{\Delta}_{\mathrm{common}} = +0.00090`$ ($`p = 0.0003`$, 9/10 positive). |
 
 ---
 
@@ -88,15 +91,15 @@ The benchmark pipeline connecting raw HCP fMRI graphs, edge-specific B-spline co
 ---
 
 ### Figure 2: The Reference Domain Effect (Exp 2 Synthetic Calibration)
-Evaluating the **exact same learned model** (fitted to $f^*(x) = x + 0.5\sin(2x)$) on shifted input domains creates a massive apparent nonlinearity jump ($\Delta = +0.0816 \pm 0.0084$), >40× larger than real model differences.
+Evaluating the **exact same learned model** (fitted to $`f^*(x) = x + 0.5\sin(2x)`$) on shifted input domains creates a massive apparent nonlinearity jump ($`\Delta = +0.0816 \pm 0.0084`$), >40× larger than real model differences.
 ![Figure 2: Reference Domain Effect](figures/fig2_reference_domain_effect.png)
 
 ---
 
 ### Figure 3: Dual Estimand Evaluation Across 10 Seeds (Exp 5: Pooled Domain vs. Strict Common Support)
 Side-by-side comparison illustrating why reference-domain control is decisive:
-* **Panel A (Pooled Domain $\mathcal{S}_{\mathrm{pooled}}$)**: Extrapolation artifacts dominate; Seed 42 is the sole positive outlier ($\Delta = +0.0017$), while 9/10 seeds produce negative differences ($\bar{\Delta} = -0.00058$, $p = 0.9513$).
-* **Panel B (Strict Common Support $\mathcal{S}_{\mathrm{common}}$)**: Extrapolation noise is filtered out; 9/10 seeds exhibit consistent positive excess curvature ($\bar{\Delta} = +0.00090$, Student's $t$ $95\%$ CI $[+0.00051, +0.00129]$, $t = 5.186$, $p = 0.0003$).
+* **Panel A (Pooled Domain $`\mathcal{S}_{\mathrm{pooled}}`$)**: Extrapolation artifacts dominate; Seed 42 is the sole positive outlier ($`\Delta = +0.0017`$), while 9/10 seeds produce negative differences ($`\bar{\Delta} = -0.00058`$, $`p = 0.9513`$).
+* **Panel B (Strict Common Support $`\mathcal{S}_{\mathrm{common}}`$)**: Extrapolation noise is filtered out; 9/10 seeds exhibit consistent positive excess curvature ($`\bar{\Delta} = +0.00090`$, Student's $`t`$ 95% CI $[+0.00051, +0.00129]$, $`t = 5.186`$, $`p = 0.0003`$).
 ![Figure 3: Seed Variability](figures/fig3_seed_variability.png)
 
 ---
@@ -113,14 +116,14 @@ A side-by-side comparison illustrating how conventional practices lead to false 
 
 - [x] Synthetic calibration with ground-truth functions (Exp 2-A/B/C)
 - [x] Common support domain control on fMRI connectomes (Exp 3)
-- [x] High-precision single-seed permutation baseline (Exp 1, $N=500$)
-- [x] Multi-seed stability & optimization marginalization (Exp 5, $S=10$)
-- [x] HCP working-memory benchmark ($N=100$ subjects, 2-back vs. 0-back)
+- [x] High-precision single-seed permutation baseline (Exp 1, $`N=500`$)
+- [x] Multi-seed stability & optimization marginalization (Exp 5, $`S=10`$)
+- [x] HCP working-memory benchmark ($`N=100`$ subjects, 2-back vs. 0-back)
 - [x] Pre-committed protocol specifications (`protocol/`)
 
 **Planned & Ongoing Extensions:**
 - [ ] Cross-cohort evaluation on independent clinical datasets
-- [ ] Ultra-large-scale seed profiling ($S \ge 50$)
+- [ ] Ultra-large-scale seed profiling ($`S \ge 50`$)
 - [ ] Benchmarking alternative spline representations (Fourier-KAN, Wavelet-KAN)
 
 ---
@@ -144,8 +147,8 @@ protocol/
 For detailed mathematical proofs, derivations, and statistical protocols, see the compiled whitepapers:
 - 📌 **[BrainKAN Two-Page Research Evidence Brief (PDF)](./docs/BrainKAN_Research_Evidence_Brief.pdf)** ([Markdown Version](./docs/BrainKAN_Research_Evidence_Brief.md) | [LaTeX Source](./docs/BrainKAN_Research_Evidence_Brief.tex)) — Concise 2-page technical dossier for academic committees: Page 1 covers the core research problem, B-spline architecture, HCP dataset, and experimental design; Page 2 details empirical results, inferential boundaries, and full codebase paths.
 - 🔍 **[BrainKAN Data and Code Audit Report (MD)](./docs/audit_report.md)** — All 5 methodological audit items closed (pairing integrity, reference domain leak prevention, exception fallback audit, model parameter matching).
-- 🎓 **[Mathematical Research Evidence: Methodological Analysis (MD)](./docs/mathematical_research_evidence.md)** ([LaTeX Source](./docs/mathematical_research_evidence.tex)) — Candidate research evidence dossier: empirical DFL metric definition & domain sensitivity, paired permutation null hypothesis testing ($p \approx 0.00599$), and estimand-dependent sign reversal under empirical common support.
-- 🛡️ **[Methodological Assumptions, Boundary Conditions, and Empirical Audit (MD)](./docs/critical_methodological_defense_and_bounds.md)** — Comprehensive methodological audit of estimands, assumptions, and limitations: optimization sensitivity vs. population uncertainty, finite permutation precision ($B=15$), empirical fallback audit (0/240), evaluation gauge invariance, representation diagnostics, and $P \gg N$ capacity calibration.
+- 🎓 **[Mathematical Research Evidence: Methodological Analysis (MD)](./docs/mathematical_research_evidence.md)** ([LaTeX Source](./docs/mathematical_research_evidence.tex)) — Candidate research evidence dossier: empirical DFL metric definition & domain sensitivity, paired permutation null hypothesis testing ($`p \approx 0.00599`$), and estimand-dependent sign reversal under empirical common support.
+- 🛡️ **[Methodological Assumptions, Boundary Conditions, and Empirical Audit (MD)](./docs/critical_methodological_defense_and_bounds.md)** — Comprehensive methodological audit of estimands, assumptions, and limitations: optimization sensitivity vs. population uncertainty, finite permutation precision ($`B=15`$), empirical fallback audit (0/240), evaluation gauge invariance, representation diagnostics, and $`P \gg N`$ capacity calibration.
 - 📋 **[Sample Pairing Manifest (CSV)](./data/subject_pairing_manifest.csv)** — Sequential pairing manifest and cross-validation partition records for 100 HCP subject pairs (`sub-HCP100-001` through `sub-HCP100-100`).
 - 📄 **[BrainKAN Mathematical Methodology (PDF)](./docs/BrainKAN_Mathematical_Methodology.pdf)** — Core mathematical derivations, edge B-spline parameterization, and codebase mappings.
 - 📄 **[Anticipated Theoretical & Methodological Questions (PDF)](./docs/Anticipated%20Theoretical%20Questions.pdf)** — Academic defense addressing estimand mismatch, single-seed conditional vs. marginal inference.
