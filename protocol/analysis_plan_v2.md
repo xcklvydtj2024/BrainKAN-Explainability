@@ -24,5 +24,5 @@ To provide formal statistical hypothesis testing with rigorous uncertainty quant
 | **Exp 1: High-Precision Permutation** | Full-graph DFL permutation baseline ($N=500$, Seed 42) | Formalizes Q3B on global graph scale | `results/exp1_high_precision/` |
 | **Exp 2: Synthetic Calibration** | Ground-truth reference domain sensitivity ($f^*(x) = x + 0.5\sin(2x)$) | Rigorous realization of Synthetic Benchmark | `results/exp2_synthetic/` |
 | **Exp 3: Common Support Control** | Cross-cohort transfer (HCP $\to$ CHCP) under strictly bounded support | Formalizes CHCP External Validation | `results/exp3_ref_domain/`, `results/cross_cohort/` |
-| **Exp 4: Capacity Calibration** | Parameter-matched MLP vs. unconstrained baselines | Formalizes F0 / Model Capacity control | `results/exp4_multi_seed/` |
+| **Exp 4: Capacity Sensitivity** | Multi-seed capacity sensitivity across BrainKAN hidden dimensions (4, 8, 16), with parameter counts reported separately | Formalizes F0 / Model Capacity control | `results/exp4_multi_seed/` |
 | **Exp 5: Multi-Seed SMPT** | 10-seed paired null marginalization under dual estimands | Resolves Q3A vs. Q3B under optimization randomness | `results/exp5_seed_stability/` |

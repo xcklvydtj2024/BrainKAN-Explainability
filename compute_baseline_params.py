@@ -40,7 +40,12 @@ def main():
 
         edge_path = os.path.join(base_dir, "data", "GNN_Edges.pt")
         if os.path.exists(edge_path):
-            base_edge_index = torch.load(edge_path)
+            edge_data = torch.load(
+                edge_path,
+                map_location="cpu",
+                weights_only=True
+            )
+            base_edge_index = edge_data["edge_index_A"] if isinstance(edge_data, dict) and "edge_index_A" in edge_data else edge_data
         else:
             base_edge_index = torch.cartesian_prod(torch.arange(48), torch.arange(48)).T
 

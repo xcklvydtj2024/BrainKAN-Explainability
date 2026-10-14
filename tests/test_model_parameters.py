@@ -56,7 +56,12 @@ def test_live_model_parameter_counts():
         print("Skipping live test: data/GNN_Edges.pt not found.")
         return
 
-    base_edge_index = torch.load(edge_path)
+    edge_data = torch.load(
+        edge_path,
+        map_location="cpu",
+        weights_only=True
+    )
+    base_edge_index = edge_data["edge_index_A"] if isinstance(edge_data, dict) and "edge_index_A" in edge_data else edge_data
 
     # 1. Test Layer 1 EdgeSpecificKANConv parameter count
     conv1 = EdgeSpecificKANConv(
