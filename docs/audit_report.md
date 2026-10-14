@@ -37,7 +37,7 @@
 - **Historical Finding (`T_RANGE` Leak):** Early exploratory scripts hardcoded `T_RANGE = (-8.0, 12.0)` based on global empirical min/max range $[-6.6, 11.8]$. Deriving evaluation grids from the entire dataset constituted potential information leakage from the test set into the reference domain definition.
 - **Audit Verification & Resolution:**
   1. **Dynamic Training-Fold Extraction:** In modern production scripts (`07_primary_statistical_analysis.py`, `exp1_high_precision_permutation.py`, and `exp5_runner.py`), the reference domain $`\mathcal{R}_k`$ is computed dynamically inside each cross-validation fold using **only** the training subjects of that specific fold (`t_min, t_max = train_features.min(), train_features.max()`). Test fold features are never accessed during domain construction.
-  2. **Common Support Bounding:** In Exp 3 (`exp3_reference_domain_control.py`) and Exp 5 (`exp5_seed_stability.py`), the benchmark further introduced the strict common support intersection ($`\mathcal{S}_{\mathrm{common}} = \operatorname{supp}(X_0) \cap \operatorname{supp}(X_1)`$), completely eliminating tail extrapolation artifacts while preserving strict within-fold isolation.
+  2. **Common Support Bounding:** In Exp 3 (`exp3_reference_domain_control.py`) and Exp 5 (`exp5_seed_stability.py`), the benchmark further introduced the strict common support intersection ($`\mathcal{S}_{\mathrm{common}} = \mathrm{supp}(X_0) \cap \mathrm{supp}(X_1)`$), completely eliminating tail extrapolation artifacts while preserving strict within-fold isolation.
   3. **Resolution Commit:** `ab4b4aef6b0105eb638b79007ceffe1c670e7b0c` and `17565f73114343f29633e14d35b30619d728469b`.
 
 ---

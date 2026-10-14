@@ -87,7 +87,7 @@ The common support grid is determined using true condition labels and kept fixed
 
 ### Methodological Distinction: Measurement Comparability vs. Error Rate Control
 1. **Measurement Comparability Motivation:**  
-   Fixing the evaluation domain $\mathcal{S}_{\mathrm{common}} = \operatorname{supp}(X_0) \cap \operatorname{supp}(X_1)$ ensures that the real model and all null models are evaluated over the exact same spatial interval $[c_{\min}, c_{\max}]$. If the evaluation interval were dynamically recomputed for each shuffled label vector $\pi(Y)$, the shuffled condition distributions would mix, altering the evaluation domain across permutations and conflating representation differences with domain boundary shifts.
+   Fixing the evaluation domain $\mathcal{S}_{\mathrm{common}} = \mathrm{supp}(X_0) \cap \mathrm{supp}(X_1)$ ensures that the real model and all null models are evaluated over the exact same spatial interval $[c_{\min}, c_{\max}]$. If the evaluation interval were dynamically recomputed for each shuffled label vector $\pi(Y)$, the shuffled condition distributions would mix, altering the evaluation domain across permutations and conflating representation differences with domain boundary shifts.
 2. **Inferential Limitation:**  
    While fixing the evaluation grid achieves measurement comparability, it **does not formally prove valid type I error rate control** under permutation testing, because the true condition labels were used to construct the reference domain.
 3. **Appropriate Positioning:**  

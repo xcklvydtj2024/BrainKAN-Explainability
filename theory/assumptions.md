@@ -36,7 +36,7 @@ Evaluating raw $\mathrm{DFL}(f_{\mathrm{real}})$ without subtracting the paired 
 
 ### Formulation
 Spline evaluation metrics like Deviation-From-Linearity ($\mathrm{DFL}$) are non-local functional metrics that depend explicitly on the evaluation domain $\mathcal{S} \subset \mathbb{R}$:
-$$\operatorname{DFL}(f, \mathcal{S}) = \frac{\sum_{t \in \mathcal{S}} (f(t) - \hat{y}_{\mathrm{linear}}(t))^2}{\sum_{t \in \mathcal{S}} (f(t) - \bar{y})^2}$$
+$$\mathrm{DFL}(f, \mathcal{S}) = \frac{\sum_{t \in \mathcal{S}} (f(t) - \hat{y}_{\mathrm{linear}}(t))^2}{\sum_{t \in \mathcal{S}} (f(t) - \bar{y})^2}$$
 
 ### Anchored Operational Accounting
 To provide a concrete reference standard against which domain sensitivity can be audited, we define an **anchored operational decomposition** relative to a predefined canonical support $\mathcal{S}_0$:

@@ -65,7 +65,7 @@ When evaluating spline functions $\Phi_{ij}$ for a given node $n$, researchers m
    Constructed from the union of all training samples across both task conditions.
 
 2. **Common-Support Intersection ($\mathcal{S}_{\mathrm{common}}$)**:
-   $$\mathcal{S}_{\mathrm{common}}^{(n)} = \operatorname{supp}(X_n^{(0)}) \cap \operatorname{supp}(X_n^{(1)}) = \left[ \max\left(q_{0.01}(X_n^{(0)}), q_{0.01}(X_n^{(1)})\right), \; \min\left(q_{0.99}(X_n^{(0)}), q_{0.99}(X_n^{(1)})\right) \right]$$
+   $$\mathcal{S}_{\mathrm{common}}^{(n)} = \mathrm{supp}(X_n^{(0)}) \cap \mathrm{supp}(X_n^{(1)}) = \left[ \max\left(q_{0.01}(X_n^{(0)}), q_{0.01}(X_n^{(1)})\right), \; \min\left(q_{0.99}(X_n^{(0)}), q_{0.99}(X_n^{(1)})\right) \right]$$
    Constructed strictly from the overlapping region where empirical data points exist under both conditions.
 
 ### 3.2 Empirical Support Overlap in Within-Cohort HCP Data
@@ -103,12 +103,12 @@ The network architecture naturally allocates a non-linear curvature budget to ro
 
 ### 5.1 Affine Scale Invariance
 The Deviation-from-Linearity metric is defined as:
-$$\operatorname{DFL}(f, X) = 1 - R^2 = \frac{\sum_{t \in X} (f(t) - \hat{f}(t))^2}{\sum_{t \in X} (f(t) - \bar{f})^2} = \frac{\mathrm{SS}_{\mathrm{res}}(f)}{\mathrm{SS}_{\mathrm{tot}}(f)}$$
+$$\mathrm{DFL}(f, X) = 1 - R^2 = \frac{\sum_{t \in X} (f(t) - \hat{f}(t))^2}{\sum_{t \in X} (f(t) - \bar{f})^2} = \frac{\mathrm{SS}_{\mathrm{res}}(f)}{\mathrm{SS}_{\mathrm{tot}}(f)}$$
 where $\hat{f}(t) = a t + b$ is the best-fit linear regression of $f(t)$ over $X$.
 
 **Theorem (Affine Invariance):**
 For any non-zero scalar $c \neq 0$ and constant $d \in \mathbb{R}$, let $g(t) = c \cdot f(t) + d$. Then:
-$$\operatorname{DFL}(g, X) = \operatorname{DFL}(f, X)$$
+$$\mathrm{DFL}(g, X) = \mathrm{DFL}(f, X)$$
 
 *Proof:*
 By linearity of least-squares regression:
@@ -118,7 +118,7 @@ By linearity of least-squares regression:
 3. Total sum of squares:
    $$\mathrm{SS}_{\mathrm{tot}}(g) = \sum_{t \in X} [ (c f(t) + d) - (c \bar{f} + d) ]^2 = c^2 \sum_{t \in X} [f(t) - \bar{f}]^2 = c^2 \mathrm{SS}_{\mathrm{tot}}(f)$$
 4. Ratio:
-   $$\operatorname{DFL}(g, X) = \frac{c^2 \mathrm{SS}_{\mathrm{res}}(f)}{c^2 \mathrm{SS}_{\mathrm{tot}}(f)} = \frac{\mathrm{SS}_{\mathrm{res}}(f)}{\mathrm{SS}_{\mathrm{tot}}(f)} = \operatorname{DFL}(f, X) \quad \blacksquare$$
+   $$\mathrm{DFL}(g, X) = \frac{c^2 \mathrm{SS}_{\mathrm{res}}(f)}{c^2 \mathrm{SS}_{\mathrm{tot}}(f)} = \frac{\mathrm{SS}_{\mathrm{res}}(f)}{\mathrm{SS}_{\mathrm{tot}}(f)} = \mathrm{DFL}(f, X) \quad \blacksquare$$
 
 ### 5.2 Advantage Over Curvature Energy ($\int [f'']^2$)
 Differential geometric metrics such as the $L_2$ norm of second derivatives ($\mathcal{E}(f) = \int [f''(t)]^2 dt$) are **not scale-invariant**:
@@ -128,7 +128,7 @@ Curvature energy scales quadratically with function amplitude. In neural network
 ### 5.3 Numerical Singularity at Low Total Variance
 The scale invariance holds everywhere except at the singular boundary $\mathrm{SS}_{\mathrm{tot}} \to 0$ (a flat, constant function $f(t) \equiv C$).
 For a constant function, $\mathrm{SS}_{\mathrm{res}} = 0$ and $\mathrm{SS}_{\mathrm{tot}} = 0$, making $1-R^2 = 0/0$ mathematically indeterminate.
-In our implementation, a threshold of $\mathrm{SS}_{\mathrm{tot}} < 10^{-6}$ assigns $\operatorname{DFL} = 0$. While computationally pragmatic, this threshold is dimensionful. To ensure robustness, we verified that learned edge splines in BrainKAN operate with typical variances $\mathrm{SS}_{\mathrm{tot}} \in [0.05, 1.20]$, safely away from the numerical singularity.
+In our implementation, a threshold of $\mathrm{SS}_{\mathrm{tot}} < 10^{-6}$ assigns $\mathrm{DFL} = 0$. While computationally pragmatic, this threshold is dimensionful. To ensure robustness, we verified that learned edge splines in BrainKAN operate with typical variances $\mathrm{SS}_{\mathrm{tot}} \in [0.05, 1.20]$, safely away from the numerical singularity.
 
 ---
 

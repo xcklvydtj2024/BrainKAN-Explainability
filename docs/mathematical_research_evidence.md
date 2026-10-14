@@ -54,26 +54,26 @@ To quantify the empirical deviation of sampled function values from their best a
 
 $$(a^*, b^*) = \arg\min_{a, b \in \mathbb{R}} \sum_{i=1}^K [f(x_i) - (a x_i + b)]^2$$
 
-The **Deviation-From-Linearity ($\operatorname{DFL}$)** metric is defined as the normalized residual sum of squares:
+The **Deviation-From-Linearity ($\mathrm{DFL}$)** metric is defined as the normalized residual sum of squares:
 
-$$\boxed{\operatorname{DFL}(f; D) = \frac{\min_{a, b} \sum_{i=1}^K [f(x_i) - (a x_i + b)]^2}{\sum_{i=1}^K [f(x_i) - \bar{f}_D]^2} = \frac{\mathrm{SS}_{\mathrm{res}}}{\mathrm{SS}_{\mathrm{tot}}} = 1 - R^2}$$
+$$\boxed{\mathrm{DFL}(f; D) = \frac{\min_{a, b} \sum_{i=1}^K [f(x_i) - (a x_i + b)]^2}{\sum_{i=1}^K [f(x_i) - \bar{f}_D]^2} = \frac{\mathrm{SS}_{\mathrm{res}}}{\mathrm{SS}_{\mathrm{tot}}} = 1 - R^2}$$
 
 where $\bar{f}_D = \frac{1}{K} \sum_{i=1}^K f(x_i)$.
 
 ### 2.2 Analytical Nuances & Discrete Limitations
-1. Directionality: $\operatorname{DFL}$ measures the fraction of sample variance unexplained by the affine model. $\operatorname{DFL} = 0$ corresponds to perfect collinearity on $D$; $\operatorname{DFL} = 1$ indicates that the affine hypothesis class explains zero variance on the sampled grid ($R^2 = 0$).
-2. Degeneracy Convention: The definition requires $\mathrm{SS}_{\mathrm{tot}} > 0$. If $f$ is constant on $D$ ($f(x_i) \equiv c$), $\mathrm{SS}_{\mathrm{tot}} = 0$, yielding an indeterminate $0/0$. In our codebase, constant functions are assigned $\operatorname{DFL}(f; D) = 0$ by operational convention.
-3. Discrete Grid Limitation: $\operatorname{DFL}(f; D) = 0$ guarantees collinearity only at the discrete sample points $\{x_i\}_{i=1}^K$. It does not mathematically guarantee that the continuous spline is affine in the continuum between probe points.
+1. Directionality: $\mathrm{DFL}$ measures the fraction of sample variance unexplained by the affine model. $\mathrm{DFL} = 0$ corresponds to perfect collinearity on $D$; $\mathrm{DFL} = 1$ indicates that the affine hypothesis class explains zero variance on the sampled grid ($R^2 = 0$).
+2. Degeneracy Convention: The definition requires $\mathrm{SS}_{\mathrm{tot}} > 0$. If $f$ is constant on $D$ ($f(x_i) \equiv c$), $\mathrm{SS}_{\mathrm{tot}} = 0$, yielding an indeterminate $0/0$. In our codebase, constant functions are assigned $\mathrm{DFL}(f; D) = 0$ by operational convention.
+3. Discrete Grid Limitation: $\mathrm{DFL}(f; D) = 0$ guarantees collinearity only at the discrete sample points $\{x_i\}_{i=1}^K$. It does not mathematically guarantee that the continuous spline is affine in the continuum between probe points.
 
 ### 2.3 Synthetic Model Calibration & Domain Sensitivity (Exp 2-B)
-To audit whether $\operatorname{DFL}$ behaves as an intrinsic invariant of a learned mechanism or depends on the choice of evaluation grid, we conducted a controlled synthetic audit (`exp2_synthetic_calibration.py`):
+To audit whether $\mathrm{DFL}$ behaves as an intrinsic invariant of a learned mechanism or depends on the choice of evaluation grid, we conducted a controlled synthetic audit (`exp2_synthetic_calibration.py`):
 - Data Generating Process: Ground-truth target $y = f^*(x) + \epsilon$, where $f^*(x) = x + 0.5\sin(2x)$, $x \sim \mathcal{N}(0, 1)$, and $\epsilon \sim \mathcal{N}(0, 0.05^2)$.
 - Learned Representation: A B-spline KAN layer (`SyntheticEdgeKAN`) was fitted to this target, yielding a parameter-frozen learned model $\hat{f}$.
-- Evaluation Domain Shift: Holding the identical learned model $\hat{f}$ completely fixed, we evaluated $\operatorname{DFL}(\hat{f}; D)$ over two 100-point uniform probe grids:
-  - $D_1 = [-2.0, 2.0]$ (full symmetric interval, where the linear drift $x$ accounts for most sample variance, yielding mean $\operatorname{DFL} \approx 0.0388 \pm 0.0024$).
-  - $D_2 = [0.0, 2.0]$ (restricted half-cycle, where the oscillatory harmonic $0.5\sin(2x)$ constitutes a larger fraction of variance relative to the linear trend, yielding mean $\operatorname{DFL} \approx 0.1204 \pm 0.0084$).
-- Finding: Across $N = 200$ independent simulation trials, evaluating the exact same learned model on $D_2$ versus $D_1$ produced an artifactual metric inflation of $\Delta \operatorname{DFL} = +0.0816 \pm 0.0084$ ($t = 136.6$), which is $>40$ times larger than typical task condition differences in real fMRI networks ($\sim 0.0009$).
-- Methodological Qualification: $D_1 = [-2, 2]$ and $D_2 = [0, 2]$ differ simultaneously in their center ($0$ vs. $1$) and support length ($4$ vs. $2$). This demonstrates that even for a fixed learned representation, $\operatorname{DFL}$ reflects the joint sensitivity of the metric to evaluation location and scale rather than an invariant property of the underlying network function.
+- Evaluation Domain Shift: Holding the identical learned model $\hat{f}$ completely fixed, we evaluated $\mathrm{DFL}(\hat{f}; D)$ over two 100-point uniform probe grids:
+  - $D_1 = [-2.0, 2.0]$ (full symmetric interval, where the linear drift $x$ accounts for most sample variance, yielding mean $\mathrm{DFL} \approx 0.0388 \pm 0.0024$).
+  - $D_2 = [0.0, 2.0]$ (restricted half-cycle, where the oscillatory harmonic $0.5\sin(2x)$ constitutes a larger fraction of variance relative to the linear trend, yielding mean $\mathrm{DFL} \approx 0.1204 \pm 0.0084$).
+- Finding: Across $N = 200$ independent simulation trials, evaluating the exact same learned model on $D_2$ versus $D_1$ produced an artifactual metric inflation of $\Delta \mathrm{DFL} = +0.0816 \pm 0.0084$ ($t = 136.6$), which is $>40$ times larger than typical task condition differences in real fMRI networks ($\sim 0.0009$).
+- Methodological Qualification: $D_1 = [-2, 2]$ and $D_2 = [0, 2]$ differ simultaneously in their center ($0$ vs. $1$) and support length ($4$ vs. $2$). This demonstrates that even for a fixed learned representation, $\mathrm{DFL}$ reflects the joint sensitivity of the metric to evaluation location and scale rather than an invariant property of the underlying network function.
 
 ---
 
@@ -87,7 +87,7 @@ In our task-fMRI connectomics benchmark, each human subject underwent both a 0-B
 - Exchangeability Structure: The permutation distribution is generated via subject-level sign flips: $\pi_i \in \{(0, 1), (1, 0)\}$ with equal probability $0.5$. This preserves individual anatomy ($48$ ROIs) and functional connectome topology ($240$ edges) under the null, breaking strictly the association between learned weights and task supervision.
 
 ### 3.2 Monte Carlo Permutation p-value
-With network-level test statistic $T = \frac{1}{|E|} \sum_{e \in E} \operatorname{DFL}_e$ ($T_{\mathrm{obs}} = 0.17895$ for the real model), evaluating $B = 500$ independent paired permutation null models $\{T_b\}_{b=1}^{500}$ (Exp 1) yields the **Monte Carlo permutation $p$-value**:
+With network-level test statistic $T = \frac{1}{|E|} \sum_{e \in E} \mathrm{DFL}_e$ ($T_{\mathrm{obs}} = 0.17895$ for the real model), evaluating $B = 500$ independent paired permutation null models $\{T_b\}_{b=1}^{500}$ (Exp 1) yields the **Monte Carlo permutation $p$-value**:
 
 $$\boxed{p = \frac{1 + \#\{T_b \ge T_{\mathrm{obs}}\}}{B + 1} = \frac{1 + 2}{500 + 1} = \frac{3}{501} \approx 0.00599}$$
 
@@ -128,7 +128,7 @@ In Exp 5, across $S = 10$ independent random optimization seeds ($w_0 \sim \math
 
 This benchmark illustrates core methodological competencies essential for advanced graduate research:
 
-1. **Metric Scrutiny over Black-Box Metrics:** Rather than treating $\operatorname{DFL} = 1 - R^2$ as an intrinsic measure of biological curvature, we formalized it as an empirical projection residual against an affine hypothesis class and demonstrated its joint location-scale sensitivity via controlled synthetic calibration.
+1. **Metric Scrutiny over Black-Box Metrics:** Rather than treating $\mathrm{DFL} = 1 - R^2$ as an intrinsic measure of biological curvature, we formalized it as an empirical projection residual against an affine hypothesis class and demonstrated its joint location-scale sensitivity via controlled synthetic calibration.
 2. **Principled Statistical Inference:** Rather than celebrating an empirical $p \approx 0.006$ as "proof of neural mechanisms," we explicitly articulated the conditioning on label exchangeability, model capacity, and dataset-specific baselines.
 3. **Estimand Awareness & Scientific Restraint:** Discovering that the sign of the effect inverts (from $-0.00058$ to $+0.00090$) between the pooled domain and the empirical overlap region prevented false scientific conclusions. The observed direction of the estimated effect can depend critically on the chosen evaluation domain, underscoring the need to distinguish measurement sensitivity from biological interpretation.
 4. **Research Philosophy:** The objective of this work was not to maximize model complexity, but to develop reliable criteria for interpreting learned representations. If extending this project, the primary priority is establishing formal subject-level uncertainty quantification (via hierarchical Bayesian modeling or nested subject-level resampling), rather than scaling architectural complexity.

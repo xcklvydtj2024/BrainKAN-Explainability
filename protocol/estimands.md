@@ -71,7 +71,7 @@ where $S = 10$ seeds, $B = 15$ design-consistent paired permutations per seed.
   - $t = -1.8493$, $p_{\mathrm{one-sided}} = 0.9513$
   - **Behavior:** 9 out of 10 seeds yield negative differences (Seed 42 is the sole positive outlier, $\Delta = +0.00172$). Tail extrapolation noise dominates.
 
-- **Estimand 2 — Strict Common Support Intersection ($\mathcal{S}_{\mathrm{common}} = \operatorname{supp}(X_0) \cap \operatorname{supp}(X_1)$):**
+- **Estimand 2 — Strict Common Support Intersection ($\mathcal{S}_{\mathrm{common}} = \mathrm{supp}(X_0) \cap \mathrm{supp}(X_1)$):**
   - $\bar{\Delta}_{\mathrm{common}} = +0.00090 \pm 0.00055$
   - 95% Student's $t$ CI ($df=9$): $[+0.00051, +0.00129]$
   - $t = 5.1862$, $p_{\mathrm{one-sided}} = 0.0003$, $p_{\mathrm{two-sided}} = 0.0006$

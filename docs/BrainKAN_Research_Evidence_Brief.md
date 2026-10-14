@@ -38,7 +38,7 @@ The benchmark evaluates a specialized 2-layer Graph Kolmogorov–Arnold Network 
 - **Layer 1 (Learnable Edge B-Splines):** For each directed functional edge $`e = (u, v) \in \mathcal{E}`$, message passing computes:
 
 $$
-\Phi_e(x_u) = w_{\mathrm{base}, e} \cdot \operatorname{SiLU}(x_u) + \sum_{k=1}^{G+k_o} c_{e, k} B_{k, k_o}(x_u)
+\Phi_e(x_u) = w_{\mathrm{base}, e} \cdot \mathrm{SiLU}(x_u) + \sum_{k=1}^{G+k_o} c_{e, k} B_{k, k_o}(x_u)
 $$
 
   where $`B_{k, k_o}`$ denotes cubic B-spline basis functions ($`k_o = 3`$) parameterized over $`G = 5`$ grid intervals ($`G + k_o = 8`$ basis functions).
@@ -50,7 +50,7 @@ $$
 - **Operational Metric (Deviation-From-Linearity, DFL):** For any learned function $`f`$ evaluated on discrete grid $`D = \{t_1, \dots, t_K\}`$, DFL measures normalized variance unexplained by affine regression:
 
 $$
-\operatorname{DFL}(f; D) = \frac{\inf_{a, b} \sum_{k=1}^K |f(t_k) - (at_k + b)|^2}{\sum_{k=1}^K |f(t_k) - \bar{f}|^2} = 1 - R^2
+\mathrm{DFL}(f; D) = \frac{\inf_{a, b} \sum_{k=1}^K |f(t_k) - (at_k + b)|^2}{\sum_{k=1}^K |f(t_k) - \bar{f}|^2} = 1 - R^2
 $$
 
 ---
@@ -69,11 +69,11 @@ $$
 The benchmark executes 5 structured, pre-committed experiments crossing input shifts with design-consistent null models:
 - **Exp 1 (High-Precision Permutation Test):** Evaluates single-seed (`seed=42`) excess curvature on the **full-graph average DFL** over $`N = 500`$ sign-flip label permutations on the pooled quantile grid $`\mathcal{S}_{\mathrm{pooled}}`$. (*Note: This global-graph permutation test is statistically distinct from the edge-level FDR test in exploratory Q3B, where 0/240 individual edges reached significance*).
 - **Exp 2 (Synthetic Ground-Truth Calibration):** A 3-condition controlled simulation ($`N = 200`$) on known function $`f^*(x) = x + 0.5\sin(2x)`$ assessing DFL sensitivity to uniform, domain-shifted, and density-weighted grids.
-- **Exp 3 (Reference Domain Control):** 5-fold CV on real fMRI data contrasting pooled ranges against empirical common support $`\mathcal{S}_{\mathrm{common}} = \operatorname{supp}(X_0) \cap \operatorname{supp}(X_1)`$.
+- **Exp 3 (Reference Domain Control):** 5-fold CV on real fMRI data contrasting pooled ranges against empirical common support $`\mathcal{S}_{\mathrm{common}} = \mathrm{supp}(X_0) \cap \mathrm{supp}(X_1)`$.
 - **Exp 4 (Capacity Sensitivity Analysis):** Multi-seed capacity sensitivity analysis across BrainKAN hidden dimensions ($`d \in \{4, 8, 16\}`$ across 5 random initializations), with model parameter counts ($`P = 589,779`$ vs. standard GNN baselines) reported separately.
 - **Exp 5 (Seed-Marginalized Permutation Testing, SMPT):** Multi-seed evaluation across 10 independent random seeds with 15 permutations per seed under **dual estimands**:
   1. *Estimand 1 (Pooled Grid $`\mathcal{S}_{\mathrm{pooled}}`$):* Evaluates $`\bar{\Delta}_{\mathrm{pool}}`$ over the full 1%–99% quantile range of combined inputs.
-  2. *Estimand 2 (Strict Common Support $`\mathcal{S}_{\mathrm{common}}`$):* Evaluates $`\bar{\Delta}_{\mathrm{common}}`$ strictly on the intersection $`\operatorname{supp}(X_0) \cap \operatorname{supp}(X_1)`$, eliminating boundary extrapolation noise.
+  2. *Estimand 2 (Strict Common Support $`\mathcal{S}_{\mathrm{common}}`$):* Evaluates $`\bar{\Delta}_{\mathrm{common}}`$ strictly on the intersection $`\mathrm{supp}(X_0) \cap \mathrm{supp}(X_1)`$, eliminating boundary extrapolation noise.
 
 ---
 

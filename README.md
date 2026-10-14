@@ -35,7 +35,7 @@ Multiple Seeds (S ≥ 10)  ──>  Common Support Bounding  ──>  Paired Per
 ```
 
 ### Three Rules for Reliable Non-linear Interpretability:
-1. **Common Support Bounding**: Evaluate spline curvature strictly on the overlapping support ($`\mathcal{S}_{\mathrm{common}} = \operatorname{supp}(X_0) \cap \operatorname{supp}(X_1)`$) to prevent extrapolation artifacts.
+1. **Common Support Bounding**: Evaluate spline curvature strictly on the overlapping support ($`\mathcal{S}_{\mathrm{common}} = \mathrm{supp}(X_0) \cap \mathrm{supp}(X_1)`$) to prevent extrapolation artifacts.
 2. **Paired Topology-Preserving Null Models**: Construct empirical null distributions by permuting labels while preserving graph topology and hyperparameter budgets.
 3. **Optimization Marginalization**: Define the target estimand as the marginal expectation across optimization seeds:
 
@@ -58,7 +58,7 @@ $$
 * **Estimand 1 — Pooled Reference Domain ($`\mathcal{S}_{\mathrm{pooled}}`$)**:
   * Under a single default initialization (`seed=42`, $`N=500`$ permutations in Exp 1), the model exhibited statistically significant excess nonlinearity ($`\Delta_{\mathrm{pool}} = +0.00162`$, $`p = 0.00599 \approx 0.0060`$). In Exp 5's 15-permutation screening, Seed 42 yielded $`\Delta = +0.00172`$.
   * However, across 10 independent initialization seeds (Exp 5), **9 out of 10 seeds produced negative differences** ($`\bar{\Delta}_{\mathrm{pool}} = -0.00058`$, Student's $`t`$ 95% CI $[-0.00130, +0.00013]$, $`p = 0.9513`$). Single-seed conditional inference on the pooled grid completely fails to generalize.
-* **Estimand 2 — Strict Common Support Intersection ($`\mathcal{S}_{\mathrm{common}} = \operatorname{supp}(X_0) \cap \operatorname{supp}(X_1)`$)**:
+* **Estimand 2 — Strict Common Support Intersection ($`\mathcal{S}_{\mathrm{common}} = \mathrm{supp}(X_0) \cap \mathrm{supp}(X_1)`$)**:
   * When evaluations are strictly restricted to the overlapping support, boundary extrapolation noise is filtered out.
   * Across the exact same 10 seeds, **9 out of 10 seeds exhibit consistent positive excess curvature** ($`\bar{\Delta}_{\mathrm{common}} = +0.00090 \pm 0.00055`$, Student's $`t`$ 95% CI $[+0.00051, +0.00129]$, $`t = 5.186`$, $`p = 0.0003`$).
 
