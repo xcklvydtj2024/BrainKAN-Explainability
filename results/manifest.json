@@ -1,13 +1,14 @@
 {
-    "benchmark_name": "BrainKAN-Interpretability-Benchmark",
+    "benchmark_name": "BrainKAN-Explainability",
     "dataset": "HCP-WM (100 subjects, 2-Back vs 0-Back)",
     "python_version": "3.10.20",
     "torch_version": "2.14.0+cpu",
     "torch_geometric_version": "2.8.0.post1",
     "canonical_result_directories": {
-        "domain_bias_correction": "results/domain_bias_correction",
-        "mechanistic_controls": "results/mechanistic_controls",
         "hierarchical_inference": "results/hierarchical_inference",
+        "mechanistic_controls": "results/mechanistic_controls",
+        "domain_bias_correction": "results/domain_bias_correction",
+        "curvature_ablation": "results/curvature_ablation",
         "exp1_high_precision": "results/exp1_high_precision",
         "exp2_synthetic_calibration": "results/exp2_synthetic",
         "exp3_common_support_control": "results/exp3_ref_domain",
@@ -16,48 +17,82 @@
         "empirical_support_audit": "results/primary_analysis/node_support_overlap_stats.csv"
     },
     "experiments": {
-        "mechanistic_controls": {
-            "dgm": "x_{v,i,c} = a*x_{u,i,c} + gamma*(2c-1)*tanh(b*x_{u,i,c}) + eps_{i,c}",
-            "null_calibration_cohorts": 100,
-            "permutations_per_cohort": 199,
-            "nominal_alpha": 0.05,
-            "empirical_fpr": 0.0700,
-            "empirical_fpr_se": 0.0255,
-            "mean_p_value": 0.4635,
-            "median_p_value": 0.4300,
-            "positive_control_power": {
-                "gamma_0_1": {"power": 0.0333, "auc": 0.6132, "recall": 0.0, "precision": 0.0},
-                "gamma_0_2": {"power": 0.0000, "auc": 0.7070, "recall": 0.0, "precision": 0.0},
-                "gamma_0_5": {"power": 0.2000, "auc": 0.9879, "recall": 0.5889, "precision": 0.5889},
-                "gamma_1_0": {"power": 1.0000, "auc": 1.0000, "recall": 1.0, "precision": 1.0}
+        "hierarchical_inference": {
+            "single_seed_conditional_test": {
+                "seed": 42,
+                "n_seeds": 1,
+                "n_permutations": 500,
+                "t_obs": 0.178953,
+                "t_null_mean": 0.177333,
+                "delta": 0.001620,
+                "empirical_p_value": 0.005988,
+                "gpd_tail_p_value": 0.003535,
+                "status": "Significant conditioned on Seed 42"
             },
-            "brainkan_architectural_audit": {
-                "planted_dfl_gamma_0": 0.2229,
-                "unplanted_dfl_gamma_0": 0.2563,
-                "planted_dfl_gamma_1": 0.1910,
-                "unplanted_dfl_gamma_1": 0.2579,
-                "scientific_conclusion": "End-to-end graph classification with global pooling suffers from pooling dilution and spline noise overfitting (~0.25 background DFL), proving it cannot resolve local mechanistic non-linear couplings without edge-level supervision."
+            "multi_seed_optimization_audit": {
+                "n_seeds": 10,
+                "mean_t_real": 0.179394,
+                "mean_t_null": 0.179977,
+                "mean_delta": -0.000583,
+                "positive_seeds": "1/10 (Seed 42 only)",
+                "one_sided_t_p": 0.951271,
+                "status": "Fails to generalize across seeds on label-blind domain"
+            },
+            "mismatched_comparison_audit": {
+                "t_obs_10_seeds": 0.179394,
+                "null_seed_42": 0.177333,
+                "mismatched_p": 0.003992,
+                "status": "DISCARDED_AS_STATISTICALLY_INVALID",
+                "note": "Comparing a 10-seed mean to a 1-seed null violates the statistical requirement that observed and null statistics follow identical evaluation procedures. Formally discarded."
             }
         },
-        "hierarchical_inference": {
-            "primary_target": "Label_Blind_Training_Fold_Domain",
-            "n_seeds": 10,
-            "n_permutations": 500,
-            "t_obs_marginal": 0.17939,
-            "perm_null_mean": 0.17733,
-            "perm_null_std": 0.00058,
-            "perm_empirical_pvalue": 0.00399,
-            "perm_gpd_tail_pvalue": 0.00058,
-            "seed_optimization_sd": 0.00126,
-            "seed_optimization_cv_pct": 0.7042,
-            "synthetic_bootstrap_status": "REMOVED_IN_FAVOR_OF_RIGOR"
+        "mechanistic_controls": {
+            "polynomial_nonlinear_benchmark": {
+                "sharp_null_exchangeable": {
+                    "linear_shift": 0.0,
+                    "n_cohorts": 100,
+                    "n_permutations": 199,
+                    "fpr_alpha05": 0.0400,
+                    "fpr_se": 0.019596,
+                    "mean_p": 0.47725,
+                    "status": "WELL-CALIBRATED"
+                },
+                "linear_confounder_null": {
+                    "linear_shift": 0.4,
+                    "n_cohorts": 100,
+                    "n_permutations": 199,
+                    "fpr_alpha05": 0.0700,
+                    "fpr_se": 0.025515,
+                    "mean_p": 0.46350,
+                    "status": "WELL-CALIBRATED"
+                },
+                "power_curve": {
+                    "gamma_0_1": {"power": 0.0333, "auc": 0.6132, "recall": 0.0, "precision": 0.0},
+                    "gamma_0_2": {"power": 0.0000, "auc": 0.7070, "recall": 0.0, "precision": 0.0},
+                    "gamma_0_5": {"power": 0.2000, "auc": 0.9879, "recall": 0.5889, "precision": 0.5889},
+                    "gamma_1_0": {"power": 1.0000, "auc": 1.0000, "recall": 1.0, "precision": 1.0}
+                }
+            },
+            "brainkan_end_to_end_audit": {
+                "gamma_0": {"planted_dfl": 0.2229, "unplanted_dfl": 0.2563, "overall_dfl": 0.2555},
+                "gamma_1": {"planted_dfl": 0.1910, "unplanted_dfl": 0.2579, "overall_dfl": 0.2562},
+                "verdict": "BrainKAN end-to-end graph classification fails to identify planted nonlinear edges due to over-parameterized spline noise overfitting (~0.25 baseline DFL across all edges) and global readout pooling dilution."
+            }
+        },
+        "curvature_ablation": {
+            "first_layer_curvature_drop_pct": 66.4,
+            "dfl_drop_pct": 46.5,
+            "accuracy_original": 92.0,
+            "accuracy_regularized": 91.5,
+            "paired_t_p": 0.6213,
+            "calibrated_conclusion": "Strong curvature regularization substantially reduced first-layer spline roughness, while no statistically detectable accuracy difference was observed in this limited five-fold comparison. These findings suggest that large learned curvature is not sufficient evidence of predictive necessity."
         },
         "domain_bias_correction": {
             "scheme_a_label_blind_domain": {
                 "mean_t_real": 0.18853,
                 "mean_t_null": 0.18783,
                 "delta": 0.00070,
-                "permutation_p_value": 0.0909
+                "permutation_p": 0.0909
             },
             "scheme_b_independent_split_domain": {
                 "ref_pairs": 20,
@@ -66,17 +101,17 @@
                 "mean_t_real": 0.05074,
                 "mean_t_null": 0.04983,
                 "delta": 0.00091,
-                "permutation_p_value": 0.0909
+                "permutation_p": 0.0909
             },
             "full_pipeline_reenactment": {
                 "mean_t_real": 0.09058,
                 "mean_t_null": 0.16433,
                 "delta": -0.07375,
                 "positive_folds": "0/5",
-                "permutation_p_value": 1.0000,
+                "permutation_p": 1.0000,
                 "note": "Replaced flawed 5-fold Student t-test (old p=0.000085) with permutation test. Dynamic support under permuted labels produces larger overlap and higher curvature, proving legacy positive differences were domain-selection artifacts."
             }
         }
     },
-    "methodological_framework": "SMPT (Seed-Marginalized Permutation Testing) + Unbiased Reference Domains + Counterfactual Mechanistic Controls"
+    "methodological_framework": "SMPT + Unbiased Reference Domains + Counterfactual Mechanistic Controls & Architectural Audit"
 }

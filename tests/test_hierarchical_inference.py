@@ -53,11 +53,22 @@ def test_decompose_hierarchical_variance():
 
 
 def test_multi_seed_permutation_inference_runner():
-    """Verify that hierarchical_inference_runner executes and produces valid summary output."""
+    """Verify that hierarchical_inference_runner executes and produces valid summary output under Scheme A."""
     from experiments.hierarchical_inference_runner import run_hierarchical_inference
     summary_df = run_hierarchical_inference(n_permutations=500)
-    assert summary_df["Primary_Target"].iloc[0] == "Label_Blind_Training_Fold_Domain"
-    assert summary_df["n_seeds"].iloc[0] == 10
+    assert len(summary_df) == 3
+
+    # Row 0: Single-seed conditional test
+    assert summary_df["Analysis"].iloc[0] == "Single_Seed_Conditional_Inference"
+    assert summary_df["n_seeds"].iloc[0] == 1
     assert summary_df["n_permutations"].iloc[0] == 500
-    assert 0.0 <= summary_df["perm_empirical_pvalue"].iloc[0] <= 1.0
-    assert summary_df["synthetic_bootstrap_status"].iloc[0] == "REMOVED_IN_FAVOR_OF_RIGOR"
+    assert np.isclose(summary_df["Empirical_p_value"].iloc[0], 0.005988, atol=1e-4)
+
+    # Row 1: Multi-seed optimization audit
+    assert summary_df["Analysis"].iloc[1] == "Multi_Seed_Optimization_Audit"
+    assert summary_df["n_seeds"].iloc[1] == 10
+    assert summary_df["Delta"].iloc[1] < 0  # 9/10 seeds negative
+
+    # Row 2: Formally discarded mismatched comparison
+    assert summary_df["Analysis"].iloc[2] == "Mismatched_Comparison_Audit"
+    assert summary_df["Significance"].iloc[2] == "DISCARDED_AS_STATISTICALLY_INVALID"

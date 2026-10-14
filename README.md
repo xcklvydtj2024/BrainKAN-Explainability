@@ -18,38 +18,41 @@ Kolmogorov–Arnold Networks (KANs) parameterize neural network weights with lea
 **However, interpretability requires rigorous statistical and mechanistic uncertainty accounting.** Through counterfactual synthetic benchmarks, large-scale permutation testing, and reference-domain audits, this repository demonstrates:
 
 1. **Domain Selection Confounding**: Apparent spline curvature is highly sensitive to the evaluation support. Dynamically defining common supports across experimental conditions introduces selection artifacts that reverse sign under full-pipeline label permutation.
-2. **Optimization vs. Population Stability**: While single initialization seeds can exhibit conditional variation, evaluating on a pre-committed label-blind reference domain across $S=10$ random initializations demonstrates high optimization stability ($\mathrm{CV} = 0.70\%$), achieving significant excess curvature ($p_{\mathrm{emp}} = 0.00399$ against $B=500$ valid paired permutations).
-3. **Predictive Epiphenomenality**: Forcibly flattening learned spline curvature via second-derivative penalties ($\lambda \int |f''(t)|^2 dt$) reduces curvature energy by $66.4\%$ without degrading 5-fold cross-validation accuracy ($92.0\% \to 91.5\%$, paired $p=0.6213$).
-4. **Architectural Identifiability Limits**: Under an identifiable counterfactual Data Generation Mechanism (DGM), edge-level hypothesis testing achieves well-calibrated Type I error ($\mathrm{FPR} = 7.0\% \pm 2.5\%$ across 100 independent null cohorts at $\alpha=0.05$) and $100\%$ detection power at $\gamma=1.0$ ($\mathrm{AUC} = 1.000$, $\mathrm{Precision} = 1.000$, $\mathrm{Recall} = 1.000$). However, end-to-end graph classification in deep KANs saturates B-splines on noise ($\mathrm{DFL} \approx 0.25$) due to global readout pooling dilution, highlighting the boundary of what end-to-end architectures can resolve without edge-level supervision.
+2. **Conditional vs. Multi-Seed Generalizability**: On a pre-committed label-blind reference domain, a single initialization seed (Seed 42) exhibits statistically significant excess curvature ($p_{\mathrm{emp}} = 0.00599$ against $B=500$ valid paired permutations). However, across $S=10$ independent initialization seeds, this effect fails to generalize ($\bar{\Delta} = -0.00058 \pm 0.00100$, positive in only 1/10 seeds). Naively comparing a 10-seed average to a 1-seed permutation null creates an invalid mismatched test ($p = 0.00399$) that is formally discarded.
+3. **Predictive Necessity Constraints**: Strong curvature regularization substantially reduced first-layer spline roughness, while no statistically detectable accuracy difference was observed in this limited five-fold comparison ($92.0\% \to 91.5\%$, paired $t$-test $p = 0.6213$). These findings suggest that large learned curvature is not sufficient evidence of predictive necessity.
+4. **Architectural Identifiability Limits**: Under an identifiable counterfactual Data Generation Mechanism (DGM), an identifiable polynomial regression baseline achieves well-calibrated Type I error ($\mathrm{FPR} = 4.0\%$ under strictly exchangeable sharp null, $7.0\%$ under linear confounder shifts) and $100\%$ detection power at $\gamma=1.0$ ($\mathrm{AUC} = 1.000$). Conversely, BrainKAN trained end-to-end with whole-graph classification loss fails to identify planted non-linear edges (planted DFL = $0.1910$ vs. unplanted DFL = $0.2579$), demonstrating that global readout pooling and spline over-parameterization obscure local edge-level mechanisms.
 
 ---
 
 ## 🔬 Core Methodological Pillars
 
-### Pillar 1: Counterfactual Mechanistic Controls & Identifiable Ground Truth
+### Pillar 1: Mechanistic Controls & Identifiability Benchmark
 **File:** [`experiments/mechanistic_controls.py`](experiments/mechanistic_controls.py)  
 **Verification:** [`tests/test_mechanistic_controls.py`](tests/test_mechanistic_controls.py)
 
 To evaluate whether non-linear testing frameworks can identify known ground truth, we constructed a synthetic counterfactual Data Generation Mechanism (DGM) on paired subjects ($i \in \{1,\dots,N\}$, conditions $c \in \{0, 1\}$):
 $$x_{v,i,c} = a x_{u,i,c} + \gamma (2c - 1) \tanh(b x_{u,i,c}) + \epsilon_{i,c}$$
 - **Counterfactual Control**: Comparisons across $\gamma \in \{0.0, 0.1, 0.2, 0.5, 1.0\}$ use the **exact same baseline topology, node features, and Gaussian noise realizations** $\epsilon_{i,c} \sim \mathcal{N}(0, 0.1^2)$.
-- **Planted Graph Topology**: 6 directed edges $E_{\mathrm{planted}}$ carry condition-dependent non-linearities, embedded among 94 background linear edges.
-- **Automated Data Injection Check**: Verified via automated unit tests that changing $\gamma$ modifies only planted edge responses while background edges remain identical.
+- **Planted Graph Topology**: 6 disjoint directed edges carry condition-dependent non-linearities, embedded among 94 background linear edges.
+- **Automated Data Injection Check**: Verified via automated unit tests that changing $\gamma$ modifies only planted edge target responses while all other nodes remain identical.
 
-#### 1. Null Calibration across 100 Independent Cohorts ($B = 199$ Permutations Each)
-Evaluated across **100 independently generated null cohorts** ($\gamma = 0.0$, 80 subject pairs each) with $B=199$ valid paired label permutations per cohort:
+This module explicitly distinguishes two evaluations:
+- **Benchmark 1**: Polynomial Nonlinear-Dependence Detection Benchmark (Identifiable Proxy Baseline)
+- **Audit 2**: BrainKAN End-to-End Representation Audit (Architectural Evaluation)
 
-| Metric | Empirical Result | Nominal / Expected | Status |
-| :--- | :---: | :---: | :---: |
-| **Independent Null Cohorts** | **100** | $\ge 100$ | Complete |
-| **Permutations per Cohort** | **199** | $\ge 199$ | Minimum $p = 0.0050$ |
-| **Empirical Type I Error (FPR @ $\alpha=0.05$)** | **$0.0700 \pm 0.0255$** (7/100) | $0.0500$ | **Well-Calibrated** ($95\%$ CI: $[0.029, 0.138]$) |
-| **Mean $p$-value** | **$0.4635$** | $0.5000$ | Uniform null expectation |
-| **Median $p$-value** | **$0.4300$** | $0.5000$ | Uniform null expectation |
-| **Severe False Positives ($p \le 0.01$)** | **$0.0000$** (0/100) | $\le 0.0100$ | No tail inflation |
+#### 1. Dual Null Calibration across 100 Independent Cohorts ($B = 199$ Permutations Each)
+Evaluated across **100 independently generated null cohorts** ($\gamma = 0.0$, 80 subject pairs each) with $B=199$ valid paired label permutations per cohort under both sharp and composite nulls:
 
-#### 2. Positive Control Power Curve & Planted Edge Recovery
-Evaluated across 120 trials (30 independent cohorts per non-zero $\gamma$, $B=199$ permutations):
+| Null Protocol | Linear Shift | N Cohorts | Permutations $B$ | Rejections ($\alpha=0.05$) | Empirical FPR | Mean $p$-value | Median $p$-value | Calibration Status |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Strictly Exchangeable Sharp Null** ($H_0: P_0 = P_1$) | $0.0$ | 100 | 199 | 4 / 100 | **$0.0400 \pm 0.0196$** | 0.4773 | 0.4525 | **WELL-CALIBRATED** |
+| **Linear Confounder Composite Null** | $0.4$ | 100 | 199 | 7 / 100 | **$0.0700 \pm 0.0255$** | 0.4635 | 0.4300 | **WELL-CALIBRATED** |
+
+- **Strict Exchangeability**: When $\mu_0 = \mu_1$ (`linear_shift = 0.0`), condition labels are strictly exchangeable, achieving an empirical Type I error rate of $4.0\%$.
+- **Linear Invariance**: When condition 1 carries a linear distribution shift (`linear_shift = 0.4`), the empirical Type I error is $7.0\%$, confirming that linear confounders do not cause spurious non-linear detections.
+
+#### 2. Benchmark 1: Polynomial Non-Linear Detection Power & Edge Recovery
+Evaluating the identifiable polynomial regression proxy across 120 trials (30 independent cohorts per non-zero $\gamma$, $B=199$ permutations):
 
 | Non-linear Strength $\gamma$ | Trials | Empirical Power ($\alpha=0.05$) | Power SE | Planted Edge AUC | Edge Recall | Edge Precision |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -58,37 +61,45 @@ Evaluated across 120 trials (30 independent cohorts per non-zero $\gamma$, $B=19
 | **$\gamma = 0.5$** | 30 | 0.2000 | $\pm 0.0730$ | 0.9879 | 0.5889 | 0.5889 |
 | **$\gamma = 1.0$** | 30 | **1.0000** | $\pm 0.0000$ | **1.0000** | **1.0000** | **1.0000** |
 
-#### 3. BrainKAN Architectural Audit & Boundary Conditions
-When passing this exact counterfactual cohort into BrainKAN trained end-to-end with graph classification loss:
+This confirms that the statistical testing procedure has sufficient power to reject $H_0$ and isolate planted non-linear edges when evaluated with an identifiable edge-level estimator.
+
+#### 3. Audit 2: BrainKAN End-to-End Representation Audit
+When passing the exact same counterfactual cohort into BrainKAN trained end-to-end with graph classification loss:
 - $\gamma = 0.0$: Mean Planted DFL = $0.2229$, Unplanted DFL = $0.2563$, Overall = $0.2555$
 - $\gamma = 1.0$: Mean Planted DFL = $0.1910$, Unplanted DFL = $0.2579$, Overall = $0.2562$
 
-> **Scientific Conclusion**: End-to-end graph classification with global readout pooling does not supervise individual edge functions. High-capacity B-splines overfit noise across all edges (producing a background DFL floor of $\sim 0.25$), while global pooling dilutes localized edge non-linearities. Consequently, **deep KANs trained end-to-end for whole-graph classification cannot be treated as edge-level causal discovery engines without edge-specific supervision or explicit sparsity constraints.**
+> **Scientific Conclusion**: The 100% detection power of the polynomial proxy baseline does **not** translate to BrainKAN end-to-end graph classification. High-capacity B-splines overfit noise across all edges (producing a background DFL floor of $\sim 0.25$), while global readout pooling dilutes localized edge signals. Consequently, **end-to-end graph classification in deep KANs cannot be treated as an edge-level causal discovery engine without edge-specific supervision or explicit sparsity regularization.**
 
 ---
 
-### Pillar 2: Hierarchical Permutation Testing & Optimization Stability
+### Pillar 2: Hierarchical Permutation Testing & Optimization Sensitivity Audit
 **File:** [`experiments/hierarchical_inference_runner.py`](experiments/hierarchical_inference_runner.py)  
 **Verification:** [`tests/test_hierarchical_inference.py`](tests/test_hierarchical_inference.py)
 
-#### 1. Formal Primary Inferential Target: Label-Blind Training-Fold Domain
-To eliminate label selection bias, the primary inferential target is pre-committed as the **Label-blind Training-Fold Reference Domain**:
-$$T(D, s) = \frac{1}{K}\sum_{k=1}^K \frac{1}{|E|}\sum_{e\in E} \mathrm{DFL}\left(f_e^{(k, s)}; D_k\right)$$
-where $K=5$ cross-validation folds, and $D_k$ is the reference domain determined solely from the $k$-th training fold **without conditioning on task labels**.
+#### 1. Single-Seed Conditional Permutation Test (Seed 42, $B = 500$)
+On the pre-committed **Label-Blind Training-Fold Domain**, the observed test statistic and null distribution are evaluated on the identical single seed ($s=42$):
+- **Observed Test Statistic $T_{\mathrm{obs}}(s=42)$**: $0.178953$
+- **Permutation Null Mean ($B=500$)**: $0.177333 \pm 0.000585$ ($95\text{th percentile} = 0.178301$)
+- **Excess Curvature $\Delta(s=42)$**: $+0.001620$
+- **Exact Empirical $p$-value**:
+  $$p_{\mathrm{emp}} = \frac{1 + \sum_{b=1}^{500} \mathbf{1}(T_b^{\mathrm{null}} \ge T_{\mathrm{obs}})}{500 + 1} = \frac{1 + 2}{501} = \mathbf{0.00599}$$
+- **Tail GPD $p$-value**: $0.003535$
+- **Scope**: Statistically significant conditioned on the Seed 42 initialization.
 
-The optimization-marginalized test statistic across $S=10$ fixed initialization seeds is:
-$$T_{\mathrm{obs}} = \frac{1}{S}\sum_{s=1}^S T(D, s) = \mathbf{0.17939}$$
+#### 2. Multi-Seed Optimization Sensitivity Audit ($S = 10$ Seeds)
+Evaluating whether this conditional excess curvature replicates across 10 independent random initialization seeds:
+- **Observed Curvature**: Mean $\bar{T}_{\mathrm{real}} = 0.179394 \pm 0.001263$ ($\mathrm{CV} = 0.70\%$)
+- **Null Baseline Across Seeds**: Mean $\bar{T}_{\mathrm{null}} = 0.179977 \pm 0.001492$
+- **Mean Excess Curvature**: $\bar{\Delta} = \mathbf{-0.000583} \pm 0.000996$
+- **Replication Count ($\Delta > 0$)**: **1 / 10 seeds** (Seed 42 only; 9 / 10 seeds produce negative $\Delta$)
+- **One-Sided Student's $t$-test**: $t = -1.8493, p = 0.9513$
+- **Scientific Finding**: The conditional excess curvature observed for Seed 42 fails to generalize across the optimization landscape on the label-blind training-fold domain.
 
-For each subject-paired label permutation $\pi_b$, the null statistic is computed identically:
-$$T_b^{\mathrm{null}} = \frac{1}{S}\sum_{s=1}^S T(\pi_b D, s)$$
-
-#### 2. Permutation Testing ($B = 500$ Permutations)
-- **Null Distribution Parameters**: $\mu_{\mathrm{null}} = 0.17733$, $\sigma_{\mathrm{null}} = 0.00058$, $95\text{th percentile} = 0.17830$
-- **Exact Non-Parametric Empirical $p$-value**:
-  $$p_{\mathrm{emp}} = \frac{1 + \sum_{b=1}^{500} \mathbf{1}(T_b^{\mathrm{null}} \ge T_{\mathrm{obs}})}{500 + 1} = \frac{1 + 1}{501} = \mathbf{0.00399}$$
-- **Tail Generalized Pareto Distribution (GPD) Fit**: $p_{\mathrm{gpd}} = \mathbf{0.00058}$
-- **Initialization Stability**: Optimization standard deviation across 10 random seeds is $\mathrm{SD} = 0.00126$ ($\mathrm{CV} = 0.70\%$), demonstrating that on a fixed label-blind domain, optimization convergence is highly stable.
-- **Methodological Integrity on Bootstrap**: The repository strictly rejects simulated delta sampling (`rng.normal(...)`) and uncalibrated population bootstrap claims. Estimating population uncertainty requires genuine cohort resampling with full model re-estimation, which is documented honestly as computationally intensive rather than faked with parametric proxies.
+#### 3. Methodological Audit: Formally Discarding Mismatched $p = 0.00399$
+Comparing a 10-seed observed mean ($0.179394$) directly against Seed 42's single-seed null distribution ($\mu = 0.177333$) previously produced an apparent $p = 0.00399$. **This comparison is methodologically invalid**:
+- An observed test statistic and its permutation null must follow the exact same evaluation procedure.
+- Evaluating consistently within Exp 5 reveals that the 10-seed null baseline ($0.179977$) exceeds the 10-seed real mean ($0.179394$).
+- The apparent $p = 0.00399$ is formally discarded as an artifact of comparing an averaged statistic against a single-seed null.
 
 ---
 
@@ -97,14 +108,12 @@ $$T_b^{\mathrm{null}} = \frac{1}{S}\sum_{s=1}^S T(\pi_b D, s)$$
 **Verification:** [`tests/test_reference_domains.py`](tests/test_reference_domains.py)
 
 #### 1. Audited Evaluation Protocols
-- **Scheme A (Primary: Label-Blind Training-Fold Domain)**: Each fold evaluates real and permuted models on a fixed reference domain extracted from training fold inputs ignoring labels.
+- **Scheme A (Primary: Label-Blind Training-Fold Domain)**: Evaluates real and permuted models on a fixed reference domain extracted from training fold inputs ignoring labels.
 - **Scheme B (Independent Held-Out Reference Set)**: Exactly 20 subject pairs (40 graphs) are permanently held out solely for reference domain extraction and never used in model training or testing ($\mathrm{ref\_subjects} \cap \mathrm{cv\_subjects} = \emptyset$, verified by unit test). The remaining 80 pairs undergo 5-fold CV.
 - **Full Pipeline Reenactment**: Dynamically re-determines common support under each permuted label assignment.
 
-#### 2. Re-evaluating Significance (Permutation vs. Flawed $t$-tests)
-Previous naive pipelines reported $p = 0.000085$ using a one-sample Student's $t$-test across 5 CV folds. This test was completely invalid: training folds overlap by $75\%$ (violating independence), and the difference was actually negative ($\Delta < 0$).
-
-Replacing this flawed test with full-pipeline permutation testing across folds reveals the true behavior:
+#### 2. Full-Pipeline Permutation Testing Across Folds
+Replacing flawed 5-fold Student's $t$-tests (which previously claimed $p = 0.000085$ on dependent folds) with exact permutation testing across folds reveals:
 
 | Protocol | Mean Real $T_{\mathrm{real}}$ | Mean Null $T_{\mathrm{null}}$ | Real Excess $\Delta$ | Positive Folds | Permutation $B$ | Permutation $p$-value | Scientific Verdict |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
@@ -124,8 +133,8 @@ $$\mathcal{L}_{\mathrm{total}} = \mathcal{L}_{\mathrm{CE}} + \lambda \sum_{e \in
 Across a sweep of $\lambda \in [0.0, 10.0]$:
 - Curvature energy drops by **$66.4\%$** ($1.0157 \to 0.3416$).
 - Empirical DFL drops by **$46.5\%$** ($0.1472 \to 0.0787$).
-- **5-Fold Cross-Validation Test Accuracy**: Stays completely invariant ($92.0\% \to 91.5\%$, paired $t$-test $p = 0.6213$).
-- **Conclusion**: Edge non-linearities can be substantially flattened without compromising predictive fidelity, proving that unregularized spline curvatures in BrainKAN represent over-parameterized capacity rather than necessary neurobiological mechanisms.
+- **5-Fold Cross-Validation Test Accuracy**: $92.0\% \to 91.5\%$ (paired $t$-test $p = 0.6213$).
+- **Calibrated Scientific Conclusion**: Strong curvature regularization substantially reduced first-layer spline roughness, while no statistically detectable accuracy difference was observed in this limited five-fold comparison. These findings suggest that large learned curvature is not sufficient evidence of predictive necessity. Note that $p > 0.05$ does not prove predictive equivalence, and deeper network layers retain non-linear capacity.
 
 ---
 
@@ -159,7 +168,7 @@ pytest tests/ -v
   - `test_optimization_variance_computation`: Verifies correct SD, variance, and CV calculation across seeds.
   - `test_tail_gpd_fit_monotonicity`: Verifies Generalized Pareto tail CDF monotonicity.
   - `test_empirical_p_value_calculation`: Verifies exact $(1 + k)/(B+1)$ non-parametric formula.
-  - `test_label_blind_primary_target`: Verifies primary target is Label-Blind Training-Fold Domain.
+  - `test_multi_seed_permutation_inference_runner`: Verifies Scheme A conditional test ($p \approx 0.00599$) and confirms mismatched comparison is discarded.
 - [`tests/test_reference_domains.py`](tests/test_reference_domains.py) (5 tests):
   - `test_independent_split_disjointness`: Asserts $\mathrm{ref\_subjects} \cap \mathrm{cv\_subjects} = \emptyset$.
   - `test_label_blind_domain_permutation_invariance`: Verifies reference domain bounds do not change under label permutation.
@@ -188,12 +197,12 @@ pip install -r requirements.txt
 pytest tests/
 ```
 
-### 3. Run Mechanistic Controls (Null Calibration & Power Curve)
+### 3. Run Mechanistic Controls (Dual Null Calibration & Power Curve)
 ```bash
 python experiments/mechanistic_controls.py --mode all --n_null 100 --n_perm 199
 ```
 
-### 4. Run Hierarchical Permutation Inference
+### 4. Run Hierarchical Permutation Inference & Sensitivity Audit
 ```bash
 python experiments/hierarchical_inference_runner.py
 ```
@@ -231,8 +240,8 @@ BrainKAN-Explainability/
 ├── models/
 │   └── kan.py                          # Edge-specific B-spline KAN layer & BrainKAN architecture
 ├── experiments/
-│   ├── mechanistic_controls.py         # Counterfactual DGM, 100-null calibration & power curve
-│   ├── hierarchical_inference_runner.py# Formal label-blind permutation test (B=500)
+│   ├── mechanistic_controls.py         # Counterfactual DGM, dual null calibration & power curve
+│   ├── hierarchical_inference_runner.py# Scheme A conditional test & sensitivity audit
 │   ├── domain_bias_correction.py       # Scheme A, Scheme B & Full-Pipeline Reenactment
 │   ├── curvature_ablation.py           # Second-derivative curvature roughness penalty
 │   ├── exp1_high_precision_permutation.py # High-precision 500-sample permutation baseline
@@ -258,8 +267,8 @@ BrainKAN-Explainability/
 │   ├── estimands.md
 │   └── decision_rules.md
 ├── results/                            # Clean canonical experimental outputs
-│   ├── mechanistic_controls/           # Null calibration (100 cohorts), power curve, BrainKAN audit
-│   ├── hierarchical_inference/         # Label-blind permutation distribution & optimization SD
+│   ├── mechanistic_controls/           # Dual null calibration (200 cohorts), power curve, BrainKAN audit
+│   ├── hierarchical_inference/         # Scheme A conditional test, sensitivity audit & discarded comparisons
 │   ├── domain_bias_correction/         # 4-protocol comparison records and fold outputs
 │   ├── curvature_ablation/             # Curvature regularization sweep records
 │   ├── exp1_high_precision/            # Production Exp 1 permutation baseline (N=500)

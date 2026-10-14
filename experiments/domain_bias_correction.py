@@ -87,7 +87,7 @@ def train_fast_model(train_loader, base_edge_index, num_nodes, t_range, seed, ep
     return model
 
 
-def run_single_fold(fold_k: int):
+def run_single_fold(fold_k: int, n_permutations: int = N_PERMUTATIONS):
     torch.set_num_threads(2)
     print(f"Starting Fold {fold_k + 1}/{N_SPLITS} on PID {os.getpid()}...", flush=True)
 
@@ -115,7 +115,7 @@ def run_single_fold(fold_k: int):
 
     # Pre-generate global flip vectors for permutations to preserve subject pairing
     global_flip_vectors = []
-    for b in range(N_PERMUTATIONS):
+    for b in range(n_permutations):
         np.random.seed(SEED + 1000 + b)
         global_flip_vectors.append(np.random.randint(0, 2, size=n_total_pairs))
 
@@ -163,8 +163,8 @@ def run_single_fold(fold_k: int):
         "Full_Pipeline_Reenactment": [],
     }
 
-    print(f"[Fold {fold_k + 1}] Evaluating {N_PERMUTATIONS} paired nulls...", flush=True)
-    for b in range(N_PERMUTATIONS):
+    print(f"[Fold {fold_k + 1}] Evaluating {n_permutations} paired nulls...", flush=True)
+    for b in range(n_permutations):
         # Permute labels respecting subject pairing
         permuted_list = permute_labels(train_pairs, train_global_idx, global_flip_vectors[b])
         train_loader_null = DataLoader(permuted_list, batch_size=32, shuffle=True)
@@ -296,7 +296,7 @@ def aggregate_and_summarize_protocols():
     return sum_df
 
 
-def run_parallel_benchmark():
+def run_parallel_benchmark(n_permutations: int = N_PERMUTATIONS):
     print("=" * 80, flush=True)
     print("=== TASK 1: UNBIASED REFERENCE DOMAIN PROTOCOLS (5 FOLDS PARALLEL) ===", flush=True)
     print("=" * 80, flush=True)
@@ -310,11 +310,13 @@ def run_parallel_benchmark():
             str(Path(__file__).resolve()),
             "--fold",
             str(k),
+            "--n_perm",
+            str(n_permutations),
         ]
         p = subprocess.Popen(cmd)
         processes.append((k, p))
 
-    print(f"Spawned {len(processes)} fold subprocesses in parallel across CPU cores.", flush=True)
+    print(f"Spawned {len(processes)} fold subprocesses in parallel across CPU cores (B={n_permutations} nulls/fold).", flush=True)
 
     for k, p in processes:
         p.wait()
@@ -328,11 +330,12 @@ def run_parallel_benchmark():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--fold", type=int, default=-1, help="Specific fold index to run (0-4), -1 for all parallel, -2 for summarize only.")
+    parser.add_argument("--n_perm", type=int, default=10, help="Number of paired permutations per fold (default: 10)")
     args = parser.parse_args()
 
     if args.fold >= 0:
-        run_single_fold(args.fold)
+        run_single_fold(args.fold, n_permutations=args.n_perm)
     elif args.fold == -2:
         aggregate_and_summarize_protocols()
     else:
-        run_parallel_benchmark()
+        run_parallel_benchmark(n_permutations=args.n_perm)
