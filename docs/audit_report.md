@@ -83,7 +83,7 @@
 ## Production Sign-off & Audit Closure
 
 All historical audit items have been resolved, internally audited, and supported by automated tests:
-1. Subject pairing is verified end-to-end with zero cross-validation leakage (`tests/test_pipeline_integrity.py`).
+1. Subject pairing and reference domain isolation are verified end-to-end with zero cross-validation leakage (`tests/test_reference_domains.py`).
 2. Reference domains and common support intersections are strictly computed from fold training sets.
 3. Edge mapping and PyG tensor topologies are validated via automated tests (`tests/test_edge_mapping.py`).
 4. Numerical degeneracies and fallback conditions are formally tracked (0 / 240 triggers, 0.00% degeneracy rate).

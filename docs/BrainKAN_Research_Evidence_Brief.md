@@ -24,11 +24,12 @@ Specifically, we identify two unmodeled confounding factors:
 2. **Optimization Stochasticity:** Single initialization seeds can easily produce statistically significant conditional curvature differences that vanish or reverse across the broader optimization landscape.
 
 ```
-Conventional Fragile Workflow:
-  Single Seed (s=42) ──> Raw Empirical Grid ──> Point Estimate ──> Risk of False Interpretability
-
-Proposed Calibrated Protocol (SMPT):
-  Multiple Seeds (S ≥ 10) ──> Common Support Bounding ──> Paired Permutations ──> Marginal Estimand E_s[Δ_s]
+Investigated Inferential Workflows:
+  Single-Seed Analysis (s=42):
+    Pooled Domain ──> Conditional Significance (p = 0.0060) ──> Sensitive to Random Initialization (1/10 seeds positive)
+  Multi-Seed Analysis (S = 10):
+    Pooled Domain ──> Negative Marginal Difference (Δ = -0.00058, 1/10 positive)
+    Common Support Grid ──> 9/10 Positive (Δ = +0.00090) ──> Condition-Dependent Grid Limits Confirmatory Interpretation
 ```
 
 ---
@@ -71,9 +72,9 @@ The benchmark executes 5 structured, pre-committed experiments crossing input sh
 - **Exp 2 (Synthetic Ground-Truth Calibration):** A 3-condition controlled simulation ($`N = 200`$) on known function $`f^*(x) = x + 0.5\sin(2x)`$ assessing DFL sensitivity to uniform, domain-shifted, and density-weighted grids.
 - **Exp 3 (Reference Domain Control):** 5-fold CV on real fMRI data contrasting pooled ranges against empirical common support $`\mathcal{S}_{\mathrm{common}} = \mathrm{supp}(X_0) \cap \mathrm{supp}(X_1)`$.
 - **Exp 4 (Capacity Sensitivity Analysis):** Multi-seed capacity sensitivity analysis across BrainKAN hidden dimensions ($`d \in \{4, 8, 16\}`$ across 5 random initializations), with model parameter counts ($`P = 589,779`$ vs. standard GNN baselines) reported separately.
-- **Exp 5 (Seed-Marginalized Permutation Testing, SMPT):** Multi-seed evaluation across 10 independent random seeds with 15 permutations per seed under **dual estimands**:
-  1. *Estimand 1 (Pooled Grid $`\mathcal{S}_{\mathrm{pooled}}`$):* Evaluates $`\bar{\Delta}_{\mathrm{pool}}`$ over the full 1%–99% quantile range of combined inputs.
-  2. *Estimand 2 (Strict Common Support $`\mathcal{S}_{\mathrm{common}}`$):* Evaluates $`\bar{\Delta}_{\mathrm{common}}`$ strictly on the intersection $`\mathrm{supp}(X_0) \cap \mathrm{supp}(X_1)`$, eliminating boundary extrapolation noise.
+- **Exp 5 (Multi-Seed Optimization Sensitivity & Dual-Estimand Audit):** Multi-seed evaluation across 10 independent random seeds with 15 permutations per seed under **dual estimands**:
+  1. *Estimand 1 (Label-Blind Pooled Grid $`\mathcal{S}_{\mathrm{pooled}}`$):* Evaluates $`\bar{\Delta}_{\mathrm{pool}}`$ over the combined input support. Across 10 seeds, $`\bar{\Delta}_{\mathrm{pool}} = -0.00058`$ (positive in only 1/10 seeds), establishing that the single-seed conditional finding does not hold across initializations.
+  2. *Estimand 2 (Condition-Dependent Common Support $`\mathcal{S}_{\mathrm{common}}`$):* Evaluates $`\bar{\Delta}_{\mathrm{common}}`$ on the intersection $`\mathrm{supp}(X_0) \cap \mathrm{supp}(X_1)`$. While 9/10 seeds show positive difference ($`\bar{\Delta}_{\mathrm{common}} = +0.00090`$), the grid is defined conditionally on original labels and evaluated against a fixed-grid null, limiting its confirmatory statistical interpretation.
 
 ---
 
@@ -91,22 +92,24 @@ The benchmark executes 5 structured, pre-committed experiments crossing input sh
 | **Exp 2: Synthetic Calibration** | Gauge sensitivity on $`f^*(x)=x+0.5\sin(2x)`$ | $`N=200`$ simulations | **2-A (Uniform):** $`\Delta = -0.0022`$<br>**2-B (Shifted):** $`\Delta = +0.0816`$<br>**2-C (Density):** $`\Delta = +0.0175`$ | $`\mathrm{SD} = 0.0084`$ on shifted domain | Domain shift creates >40× apparent inflation on identical model. DFL is gauge-dependent. |
 | **Exp 3: Common Support** | HCP → CHCP cross-cohort transfer | 5-fold CV | HCP domain: $`\Delta = +0.0013`$<br>Common support: $`\Delta = -0.0003`$<br>CHCP transfer: $`\Delta = -0.0003`$ | 5-fold mean | Support restriction eliminates extrapolation; excess curvature is non-distinguishable from zero. |
 | **Exp 4: Capacity Analysis** | BrainKAN hidden dimension scan ($`d \in \{4, 8, 16\}`$) | 5 seeds × 3 dims | Real $`T \approx 0.176 - 0.183`$<br>Null $`T \approx 0.177 - 0.183`$ | High test accuracy (90%–93%) | Baseline curvature ($`T \approx 0.18`$) is allocated by capacity across all widths; parameter counts reported separately. |
-| **Exp 5: SMPT (Estimand 1)** | Multi-seed marginal $`\bar{\Delta}_{\mathrm{pool}}`$ on $`\mathcal{S}_{\mathrm{pooled}}`$ | 10 seeds<br>15 per seed | $`\bar{T}_{\mathrm{real}} = 0.17939`$<br>$`\bar{T}_{\mathrm{null}} = 0.17998`$<br>$`\bar{\Delta}_{\mathrm{pool}} = \mathbf{-0.00058}`$ | 95% $`t`$-CI: $[-0.00130, +0.00013]$<br>$`t = -1.8493`$, $`p = 0.9513`$<br>**Positives: 1/10 seeds** | Under pooled grid, tail extrapolation noise dominates; 9/10 seeds negative. Single-seed inference fails. |
-| **Exp 5: SMPT (Estimand 2)** | Multi-seed marginal $`\bar{\Delta}_{\mathrm{common}}`$ on $`\mathcal{S}_{\mathrm{common}}`$ | 10 seeds<br>15 per seed | $`\bar{T}_{\mathrm{real}} = 0.08595`$<br>$`\bar{T}_{\mathrm{null}} = 0.08505`$<br>$`\bar{\Delta}_{\mathrm{common}} = \mathbf{+0.00090}`$ | 95% $`t`$-CI: $[+0.00051, +0.00129]$<br>$`t = 5.1862`$, $`p = 0.0003`$<br>**Positives: 9/10 seeds** | Boundary extrapolation noise eliminated; 9/10 seeds positive. Evidence of consistent excess curvature. |
+| **Exp 5: Multi-Seed (Estimand 1: Pooled)** | Multi-seed evaluation on label-blind $`\mathcal{S}_{\mathrm{pooled}}`$ | 10 seeds<br>15 per seed | $`\bar{T}_{\mathrm{real}} = 0.17939`$<br>$`\bar{T}_{\mathrm{null}} = 0.17998`$<br>$`\bar{\Delta}_{\mathrm{pool}} = \mathbf{-0.00058}`$ | Cross-seed SD = $0.00100$<br>**Positives: 1/10 seeds** | Under label-blind pooled grid, 9/10 seeds yield negative differences. Demonstrates that the Seed 42 conditional observation is sensitive to random initialization. |
+| **Exp 5: Multi-Seed (Estimand 2: Common Support)** | Multi-seed evaluation on condition-dependent $`\mathcal{S}_{\mathrm{common}}`$ | 10 seeds<br>15 per seed | $`\bar{T}_{\mathrm{real}} = 0.08595`$<br>$`\bar{T}_{\mathrm{null}} = 0.08505`$<br>$`\bar{\Delta}_{\mathrm{common}} = \mathbf{+0.00090}`$ | Cross-seed SD = $0.00055$<br>**Positives: 9/10 seeds**<br>(Exploratory seed-level $t$-stat: $5.19$) | 9/10 seeds positive under common support; however, condition-dependent grid selection evaluated against a fixed-grid null limits its confirmatory statistical interpretation. |
 
 ---
 
 ### 6. Inferential Limitations & Methodological Boundary Conditions
 To preserve scientific integrity, our findings are framed within explicit inferential boundaries:
-1. **Optimization Sensitivity vs. Population Generalization:**  
-   Exp 5 evaluates $`S = 10`$ optimization initializations on a fixed 100-subject cohort. It demonstrates **initialization stability**, not population-level generalizability across unseen patient cohorts.
-2. **Operational Residual Ratio vs. Differential Geometry:**  
-   $`\mathrm{DFL} = 1 - R^2`$ is an operational metric of unexplained variance against affine regression over a discrete grid, **not** coordinate-invariant differential Riemannian curvature.
-3. **Finite Permutation Precision & Shared Vectors:**  
-   In Exp 5, each seed evaluated $`B = 15`$ permutations sharing the same flip vectors ($`\mathrm{SE}_{\mathrm{MC}} \approx 0.00015`$). Exp 1 provides high-precision anchor ($`B=500`$, $`p=0.0060`$).
-4. **Representation Inspection vs. Held-Out Generalization:**  
+1. **Single-Seed vs. Multi-Seed Interpretability:**  
+   The single-seed pooled analysis (Exp 1: Seed 42, $p_{\mathrm{emp}} = 0.0060$) provides a conditional finding for that specific optimization basin. Across 10 initialization seeds under the same pooled domain, only 1/10 seeds yields a positive difference ($\bar{\Delta}_{\mathrm{pool}} = -0.00058$), confirming that the conditional finding is sensitive to optimization initialization.
+2. **Estimand Dependency of Common-Support Grids:**  
+   While 9/10 seeds exhibit positive excess curvature under common support ($\bar{\Delta}_{\mathrm{common}} = +0.00090$), the grid is constructed from condition-dependent input supports and evaluated against a fixed-grid null. This exploratory finding is distinct from a fully calibrated, label-blind multi-seed permutation test, and cannot be treated as confirmatory evidence of population-level excess curvature.
+3. **Invalidity of Mismatched Cross-Experiment Comparisons:**  
+   Comparing a 10-seed observed mean directly to a single-seed 500-permutation null yields an invalid pseudo-$p$-value ($p = 0.00399$) that is mathematically discordant with the formal test definition and is strictly discarded.
+4. **Operational Residual Ratio vs. Differential Geometry:**  
+   $\mathrm{DFL} = 1 - R^2$ is an operational metric of unexplained variance against affine regression over a discrete grid, **not** coordinate-invariant differential Riemannian curvature.
+5. **Representation Inspection vs. Held-Out Generalization:**  
    DFL inspects parameter geometry in internal representation space, not test set classification accuracy. 5-fold CV serves as a subset sensitivity check.
-5. **Empirical Fallback Numerical Guard Audit:**  
+6. **Empirical Fallback Numerical Guard Audit:**  
    The boundary guard `if c_min >= c_max:` was audited across all 5 folds × 48 ROIs (240 instances): **0 / 240 triggered (0.00%)**. In 100% of cases, non-empty condition overlaps existed.
 
 ---

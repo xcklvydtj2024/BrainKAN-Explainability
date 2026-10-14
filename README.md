@@ -20,7 +20,7 @@ Kolmogorov–Arnold Networks (KANs) parameterize neural network weights with lea
 1. **Domain Selection Confounding**: Apparent spline curvature is highly sensitive to the evaluation support. Dynamically defining common supports across experimental conditions introduces selection artifacts that reverse sign under full-pipeline label permutation.
 2. **Conditional vs. Multi-Seed Generalizability**: On a pre-committed label-blind reference domain, a single initialization seed (Seed 42) exhibits statistically significant excess curvature ($p_{\mathrm{emp}} = 0.00599$ against $B=500$ valid paired permutations). However, across $S=10$ independent initialization seeds, this effect fails to generalize ($\bar{\Delta} = -0.00058 \pm 0.00100$, positive in only 1/10 seeds). Naively comparing a 10-seed average to a 1-seed permutation null creates an invalid mismatched test ($p = 0.00399$) that is formally discarded.
 3. **Predictive Necessity Constraints**: Strong curvature regularization substantially reduced first-layer spline roughness, while no statistically detectable accuracy difference was observed in this limited five-fold comparison ($92.0\% \to 91.5\%$, paired $t$-test $p = 0.6213$). These findings suggest that large learned curvature is not sufficient evidence of predictive necessity.
-4. **Architectural Identifiability Limits**: Under an identifiable counterfactual Data Generation Mechanism (DGM), an identifiable polynomial regression baseline achieves well-calibrated Type I error ($\mathrm{FPR} = 4.0\%$ under strictly exchangeable sharp null, $7.0\%$ under linear confounder shifts) and $100\%$ detection power at $\gamma=1.0$ ($\mathrm{AUC} = 1.000$). Conversely, BrainKAN trained end-to-end with whole-graph classification loss fails to identify planted non-linear edges (planted DFL = $0.1910$ vs. unplanted DFL = $0.2579$), demonstrating that global readout pooling and spline over-parameterization obscure local edge-level mechanisms.
+4. **Architectural Identifiability Limits**: Under an identifiable counterfactual Data Generation Mechanism (DGM), an identifiable polynomial regression baseline achieves well-calibrated Type I error ($\mathrm{FPR} = 4.0\%$ under a strictly exchangeable sharp null) and an empirical rejection rate of $7.0\%$ under a linear-shift stress test, with $100\%$ detection power at $\gamma=1.0$ ($\mathrm{AUC} = 1.000$). Conversely, BrainKAN trained end-to-end with whole-graph classification loss does not identify planted non-linear edges (planted DFL = $0.1910$ vs. unplanted DFL = $0.2579$). These observations are consistent with possible effects of global pooling and excess model capacity, but do not isolate either mechanism causally.
 
 ---
 
@@ -40,16 +40,16 @@ This module explicitly distinguishes two evaluations:
 - **Benchmark 1**: Polynomial Nonlinear-Dependence Detection Benchmark (Identifiable Proxy Baseline)
 - **Audit 2**: BrainKAN End-to-End Representation Audit (Architectural Evaluation)
 
-#### 1. Dual Null Calibration across 100 Independent Cohorts ($B = 199$ Permutations Each)
-Evaluated across **100 independently generated null cohorts** ($\gamma = 0.0$, 80 subject pairs each) with $B=199$ valid paired label permutations per cohort under both sharp and composite nulls:
+#### 1. Null Calibration across 100 Independent Cohorts ($B = 199$ Permutations Each)
+Evaluated across **100 independently generated null cohorts** ($\gamma = 0.0$, 80 subject pairs each) with $B=199$ valid paired label permutations per cohort under both sharp null and a linear-shift stress test:
 
-| Null Protocol | Linear Shift | N Cohorts | Permutations $B$ | Rejections ($\alpha=0.05$) | Empirical FPR | Mean $p$-value | Median $p$-value | Calibration Status |
+| Null Protocol | Linear Shift | N Cohorts | Permutations $B$ | Rejections ($\alpha=0.05$) | Empirical Rate | Mean $p$-value | Median $p$-value | Calibration / Stress Status |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Strictly Exchangeable Sharp Null** ($H_0: P_0 = P_1$) | $0.0$ | 100 | 199 | 4 / 100 | **$0.0400 \pm 0.0196$** | 0.4773 | 0.4525 | **WELL-CALIBRATED** |
-| **Linear Confounder Composite Null** | $0.4$ | 100 | 199 | 7 / 100 | **$0.0700 \pm 0.0255$** | 0.4635 | 0.4300 | **WELL-CALIBRATED** |
+| **Linear-Shift Stress Test** | $0.4$ | 100 | 199 | 7 / 100 | **$0.0700 \pm 0.0255$** | 0.4635 | 0.4300 | **EMPIRICAL STRESS TEST** |
 
 - **Strict Exchangeability**: When $\mu_0 = \mu_1$ (`linear_shift = 0.0`), condition labels are strictly exchangeable, achieving an empirical Type I error rate of $4.0\%$.
-- **Linear Invariance**: When condition 1 carries a linear distribution shift (`linear_shift = 0.4`), the empirical Type I error is $7.0\%$, confirming that linear confounders do not cause spurious non-linear detections.
+- **Linear-Shift Stress Test**: When condition 1 carries a linear distribution shift (`linear_shift = 0.4`), paired label exchangeability no longer strictly holds. The observed empirical rejection rate is $7.0\%$ in this stress test, demonstrating that moderate linear shifts do not produce severe false-positive inflation, though this observation cannot be claimed as formal Type I error control for general composite nulls.
 
 #### 2. Benchmark 1: Polynomial Non-Linear Detection Power & Edge Recovery
 Evaluating the identifiable polynomial regression proxy across 120 trials (30 independent cohorts per non-zero $\gamma$, $B=199$ permutations):
@@ -68,7 +68,7 @@ When passing the exact same counterfactual cohort into BrainKAN trained end-to-e
 - $\gamma = 0.0$: Mean Planted DFL = $0.2229$, Unplanted DFL = $0.2563$, Overall = $0.2555$
 - $\gamma = 1.0$: Mean Planted DFL = $0.1910$, Unplanted DFL = $0.2579$, Overall = $0.2562$
 
-> **Scientific Conclusion**: The 100% detection power of the polynomial proxy baseline does **not** translate to BrainKAN end-to-end graph classification. High-capacity B-splines overfit noise across all edges (producing a background DFL floor of $\sim 0.25$), while global readout pooling dilutes localized edge signals. Consequently, **end-to-end graph classification in deep KANs cannot be treated as an edge-level causal discovery engine without edge-specific supervision or explicit sparsity regularization.**
+> **Scientific Conclusion**: The 100% detection power of the polynomial proxy baseline does **not** translate to BrainKAN end-to-end graph classification. BrainKAN exhibits lower DFL on planted edges ($0.1910$) than on unplanted edges ($0.2579$), against an overall background DFL floor of $\sim 0.25$. These observations are consistent with possible effects of global pooling and excess model capacity, but do not isolate either mechanism causally. Consequently, **end-to-end graph classification in deep KANs cannot be treated as an edge-level causal discovery engine without edge-specific supervision or explicit inductive constraints.**
 
 ---
 

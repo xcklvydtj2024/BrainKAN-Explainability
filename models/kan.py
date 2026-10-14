@@ -37,7 +37,7 @@ def _b_spline_basis(x: torch.Tensor, grid: torch.Tensor, order: int) -> torch.Te
 
 
 class EdgeSpecificKANConv(MessagePassing):
-    """
+    r"""
     Edge-Specific Kolmogorov-Arnold Network Convolution.
     
     This layer allocates independent B-Spline parameters ONLY for the actual

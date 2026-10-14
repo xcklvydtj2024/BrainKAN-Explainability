@@ -108,17 +108,17 @@ The most compelling methodological finding is an estimand-dependent directional 
 
 In Exp 5, across $S = 10$ independent random optimization seeds ($w_0 \sim \mathcal{S}$), we evaluated the paired excess curvature $\Delta_s = T(Y; s) - \frac{1}{15} \sum_{b=1}^{15} T(\pi_b(Y); s)$:
 
-| Evaluation Estimand | Mathematical Domain Definition | Mean Difference ($\bar{\Delta}$) | Seed Consistency | Student's $t$ ($df=9$) | One-Sided $p$-value |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| **Pooled Domain ($\mathcal{S}_{\mathrm{pooled}}$)** | $\text{Quantile}_{1\%-99\%}([X_0, X_1])$ | **$-0.000583$** ($\pm 0.00100$) | 1 / 10 Positive (Seed 42) | $t = -1.849$ | $p = 0.9513$ |
-| **Empirical Common Support ($\mathcal{S}_{\mathrm{common}}$)** | $[q_1^{(0)}, q_{99}^{(0)}] \cap [q_1^{(1)}, q_{99}^{(1)}]$ | **$+0.000896$** ($\pm 0.00055$) | 9 / 10 Positive | $t = +5.186$ | $p = 0.0003$ |
+| Evaluation Estimand | Mathematical Domain Definition | Mean Difference ($\bar{\Delta}$) | Seed Consistency | Exploratory Seed $t$ ($df=9$) | Statistical Note |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| **Pooled Domain ($\mathcal{S}_{\mathrm{pooled}}$)** | $\text{Quantile}_{1\%-99\%}([X_0, X_1])$ | **$-0.000583$** ($\pm 0.00100$) | 1 / 10 Positive (Seed 42) | $t = -1.849$ | 9/10 seeds negative; Seed 42 conditional finding does not generalize across seeds. |
+| **Empirical Common Support ($\mathcal{S}_{\mathrm{common}}$)** | $[q_1^{(0)}, q_{99}^{(0)}] \cap [q_1^{(1)}, q_{99}^{(1)}]$ | **$+0.000896$** ($\pm 0.00055$) | 9 / 10 Positive | $t = +5.186$ | Exploratory; condition-dependent grid limits confirmatory statistical interpretation. |
 
 ### 4.2 Methodological Diagnosis
 1. Sensitivity to Support Coverage: Across 48 ROIs on HCP fMRI data, the Jaccard overlap between 0-Back and 2-Back empirical distributions averages $38.52\% \pm 5.08\%$ (covering $43.47\%$ of the pooled span). On $\mathcal{S}_{\mathrm{pooled}}$, splines are evaluated across domains where empirical density is sparse or condition-asymmetric, yielding negative expectations for 9 out of 10 initializations.
-2. Isolation of the Empirical Overlap Region: Restricting evaluation to the empirical overlap region $[q_1^{(0)}, q_{99}^{(0)}] \cap [q_1^{(1)}, q_{99}^{(1)}]$ yields consistent positive excess curvature across 9 out of 10 seeds. The observed sign reversal is consistent with sensitivity to boundary extrapolation, although the precise contribution of extrapolation relative to other domain-dependent effects remains to be isolated.
+2. Isolation of the Empirical Overlap Region: Restricting evaluation to the empirical overlap region $[q_1^{(0)}, q_{99}^{(0)}] \cap [q_1^{(1)}, q_{99}^{(1)}]$ yields consistent positive excess curvature across 9 out of 10 seeds. However, because this grid is constructed conditionally on original task labels and evaluated against a fixed-grid null, it cannot be treated as a fully calibrated subject-level permutation test.
 
 ### 4.3 Research Boundary Demarcation
-- Optimization Stochasticity vs. Population Generalization: The paired $t$-statistic ($t = 5.186, p = 0.0003$) evaluates initialization consistency conditional on the fixed cohort sample and fixed 15 permutation vectors. It does not establish generalizability across biological subject populations ($\mathcal{D} \sim \mathcal{P}$).
+- Optimization Stochasticity vs. Population Generalization: The exploratory paired $t$-statistic ($t = 5.186$) evaluates initialization consistency across 10 seeds conditional on the fixed cohort sample and fixed common support grid. It does not constitute a subject-level permutation test and does not establish generalizability across biological subject populations ($\mathcal{D} \sim \mathcal{P}$).
 - Shared Permutation Vectors: The 10 seeds shared the same 15 permutation flip vectors, leaving common baseline error unmodeled across seeds ($\mathrm{SE}_{\mathrm{MC}} \approx 0.00015$ by illustrative order-of-magnitude proxy).
 - Label-Dependent Domain Selection: The empirical overlap region was constructed using empirical condition distributions. While holding this grid fixed provides measurement comparability across real and null models, formal finite-sample type I error rate control under label-dependent domain selection remains an open statistical problem.
 

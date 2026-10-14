@@ -328,7 +328,7 @@ def run_null_calibration_benchmark(n_null_runs: int = 100, n_perm: int = 199):
             "Status": "WELL-CALIBRATED" if abs(fpr_strict - 0.05) <= 0.04 else "UNEXPECTED",
         },
         {
-            "Null_Protocol": "Linear_Confounder_Composite_Null",
+            "Null_Protocol": "Linear_Shift_Stress_Test",
             "Linear_Shift": 0.4,
             "N_Cohorts": len(df_linear),
             "Permutations_B": n_perm,
@@ -337,7 +337,7 @@ def run_null_calibration_benchmark(n_null_runs: int = 100, n_perm: int = 199):
             "FPR_SE": se_linear,
             "Mean_p_value": float(df_linear["p_value"].mean()),
             "Median_p_value": float(df_linear["p_value"].median()),
-            "Status": "WELL-CALIBRATED" if abs(fpr_linear - 0.05) <= 0.04 else "UNEXPECTED",
+            "Status": "EMPIRICAL_STRESS_TEST" if abs(fpr_linear - 0.05) <= 0.04 else "UNEXPECTED",
         },
     ]
     df_sum = pd.DataFrame(summary_records)
@@ -403,7 +403,8 @@ def run_brainkan_representative_control(n_perm: int = 199):
     """[AUDIT 2] Executes BrainKAN end-to-end representation audit to document architectural limits.
 
     Demonstrates that end-to-end graph classification with global readout pooling does NOT recover
-    sparse local edge nonlinearities due to pooling dilution and overparameterized spline noise fitting.
+    sparse local edge nonlinearities. These observations are consistent with possible effects of global
+    pooling and excess model capacity, but do not isolate either mechanism causally.
     """
     print(f"\n[AUDIT 2] Executing BrainKAN End-to-End Representation Audit...")
     bk_file = ARTIFACTS / "brainkan_architectural_audit.csv"

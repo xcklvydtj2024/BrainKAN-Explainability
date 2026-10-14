@@ -27,9 +27,8 @@ $$\Delta(s, \mathcal{D}) = T(Y; s, \mathcal{D}) - \mathbb{E}_\pi [T(\pi(Y); s, \
 
 1. **Optimization Sensitivity Estimand (Conditional on Sample Cohort $\mathcal{D}$):**
    $$\bar{\Delta}_{\mathrm{opt}}(\mathcal{D}) = \mathbb{E}_{s \sim \mathcal{S}} \left[ \Delta(s, \mathcal{D}) \mid \mathcal{D} \right]$$
-   - Conditioned on the fixed benchmark cohort $\mathcal{D}$, the fixed 5-fold split, a fixed training configuration (15 epochs, Adam optimizer, $\text{lr} = 0.005$, matching the exact runtime specification in `exp5_runner.py`), and a fixed set of 15 permutation flip vectors, this estimand evaluates consistency across random weight initializations ($w_0 \sim \mathcal{S}$) and stochastic batch sequencing.
-   - **Empirical Finding in Exp 5:** On the strict common support grid, 9 out of 10 seeds yield a positive DFL difference ($\bar{\Delta}_{\mathrm{common}} = +0.00090 \pm 0.00055$, paired $t = 5.186, p = 0.0003$).
-   - **Appropriate Interpretation:** This demonstrates consistency of the positive difference across the tested initializations under this specific optimization regime.
+   - **Empirical Finding in Exp 5:** On the condition-dependent common support grid, 9 out of 10 seeds yield a positive DFL difference ($\bar{\Delta}_{\mathrm{common}} = +0.00090 \pm 0.00055$, exploratory seed-level paired $t = 5.186$). By contrast, on the label-blind pooled grid, only 1 out of 10 seeds yields a positive difference ($\bar{\Delta}_{\mathrm{pool}} = -0.00058 \pm 0.00100$).
+   - **Appropriate Interpretation:** This demonstrates high sensitivity of conditional findings to optimization initializations and evaluation support bounding. The seed-level $t$-statistic does not constitute a subject-level permutation test, and condition-dependent grid selection limits confirmatory statistical interpretation.
    - **Boundary Conditions:**
      - A fixed budget of 15 training epochs does not constitute mathematical proof of optimization convergence.
      - Conditioning on a shared set of 15 permutation vectors fixes the reference null baseline across seeds; the cross-seed $t$-interval captures initialization variance given this baseline, but does not cover the shared uncertainty of drawing an alternative set of permutation vectors.

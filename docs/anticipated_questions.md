@@ -16,8 +16,7 @@ What the null calibration isolates is the *excess structural deviation relative 
 Seed 42's result is not a computational mistake or a statistical false positive. It validly tests the conditional null hypothesis:
 $$H_0^{(s=42)}: \Delta_{s=42} = 0$$
 For that specific initialization basin, the real-label model converged to higher curvature than its paired null models. However, the scientific hypothesis of interest is the *marginal population estimand*:
-$$H_0: \mathbb{E}_{s \sim \mathcal{S}} [\Delta_s] \le 0$$
-When marginalizing across 10 independent initialization seeds under the pooled domain, 9 out of 10 seeds yield negative differences ($\bar{\Delta}_{\mathrm{pool}} = -0.00058$, $p = 0.9513$). By contrast, when evaluated strictly on empirical common support ($\mathcal{S}_{\mathrm{common}}$), 9 out of 10 seeds consistently yield positive excess curvature ($\bar{\Delta}_{\mathrm{common}} = +0.00090$, paired $t = 5.186, p = 0.0003$). This estimand duality demonstrates that single-seed inference on pooled domains reflects boundary extrapolation artifacts rather than a stable invariant.
+When evaluating across 10 independent initialization seeds under the label-blind pooled domain, 9 out of 10 seeds yield negative differences ($\bar{\Delta}_{\mathrm{pool}} = -0.00058$), demonstrating that Seed 42's positive excess curvature is sensitive to random initialization. On the other hand, when evaluated on empirical common support ($\mathcal{S}_{\mathrm{common}}$), 9 out of 10 seeds yield positive excess curvature ($\bar{\Delta}_{\mathrm{common}} = +0.00090$); however, because the common-support grid is defined conditionally on original labels and evaluated against a fixed-grid null, it remains an exploratory observation rather than a calibrated confirmatory test. This estimand duality demonstrates how evaluation domain choices interact with optimization sensitivity.
 
 ---
 
